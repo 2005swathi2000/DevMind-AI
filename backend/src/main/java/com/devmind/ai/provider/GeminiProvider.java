@@ -35,6 +35,11 @@ public class GeminiProvider implements AiProvider {
     }
 
     @Override
+    public String getName() {
+        return "gemini";
+    }
+
+    @Override
     public String generate(String prompt) {
         if (isDummyKey()) {
             return generateMockResponse(prompt);

@@ -1,6 +1,6 @@
 package com.devmind.ai.service;
 
-import com.devmind.ai.provider.AiProvider;
+import com.devmind.ai.provider.AiProviderRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -8,15 +8,16 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AiServiceImpl implements AiService {
 
-    private final AiProvider aiProvider;
+    private final AiProviderRegistry registry;
 
     @Override
-    public String generate(String prompt) {
-        return aiProvider.generate(prompt);
+    public String generate(String provider, String prompt) {
+        return registry.get(provider).generate(prompt);
     }
 
     @Override
-    public void generateStream(String prompt, StreamCallback callback) {
-        aiProvider.generateStream(prompt, callback);
+    public void generateStream(String provider, String prompt, StreamCallback callback) {
+        registry.get(provider).generateStream(prompt, callback);
     }
 }
+

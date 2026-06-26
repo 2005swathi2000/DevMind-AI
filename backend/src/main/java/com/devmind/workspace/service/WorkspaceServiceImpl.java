@@ -57,7 +57,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         long startTime = System.currentTimeMillis();
         StringBuilder responseBuilder = new StringBuilder();
 
-        aiService.generateStream(prompt, new StreamCallback() {
+        String provider = request.getProvider() != null ? request.getProvider() : "gemini";
+        aiService.generateStream(provider, prompt, new StreamCallback() {
             @Override
             public void onChunk(String chunk) throws Exception {
                 responseBuilder.append(chunk);

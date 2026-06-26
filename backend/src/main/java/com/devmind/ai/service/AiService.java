@@ -1,6 +1,7 @@
 package com.devmind.ai.service;
 
 public interface AiService {
-    String generate(String prompt);
-    void generateStream(String prompt, StreamCallback callback);
+    String generate(String provider, String prompt);
+    void generateStream(String provider, String prompt, StreamCallback callback);
 }
+

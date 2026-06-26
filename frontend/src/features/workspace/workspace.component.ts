@@ -151,6 +151,14 @@ import { Router, RouterLink } from '@angular/router';
                 <option value="vs">Light Theme</option>
               </select>
 
+              <!-- Provider Selector -->
+              <select [(ngModel)]="selectedProvider"
+                      class="bg-slate-900 border border-slate-800 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none focus:border-indigo-500">
+                <option value="gemini">Gemini 2.5 Flash</option>
+                <option value="openai">OpenAI GPT-5 (Planned)</option>
+                <option value="claude">Claude Sonnet (Planned)</option>
+              </select>
+
               <!-- Word Wrap Toggle -->
               <label class="flex items-center gap-1.5 cursor-pointer select-none">
                 <input type="checkbox" [(ngModel)]="wordWrap" (change)="onWordWrapChange()" class="rounded border-slate-800 bg-slate-900 text-indigo-600 focus:ring-indigo-500">
@@ -278,6 +286,7 @@ export class WorkspaceComponent implements OnInit, AfterViewChecked {
   code = `// Write or paste your code here\npublic class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`;
   selectedLanguage = 'java';
   selectedTheme = 'vs-dark';
+  selectedProvider = 'gemini';
   wordWrap = true;
   fontSize = 14;
   autoScroll = true;
@@ -413,7 +422,8 @@ export class WorkspaceComponent implements OnInit, AfterViewChecked {
     const payload = {
       code: this.code,
       toolType: this.selectedTool(),
-      language: this.selectedLanguage
+      language: this.selectedLanguage,
+      provider: this.selectedProvider
     };
 
     this.workspaceService.analyzeStream(

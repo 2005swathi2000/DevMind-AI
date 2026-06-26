@@ -20,4 +20,6 @@ public class WorkspaceRequest {
 
     @NotBlank(message = "Language is required")
     private String language;
+
+    private String provider = "gemini";
 }
