@@ -1,0 +1,25 @@
+server:
+  port: 8080
+  ssl:
+    enabled: ${SSL_ENABLED:false}
+
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+
+devmind:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      access-token-expiration-ms: 900000
+      refresh-token-expiration-ms: 86400000
+    cors:
+      allowed-origins: ${ALLOWED_ORIGINS}
+    brute-force:
+      max-attempts: 5
+      lockout-duration-ms: 900000

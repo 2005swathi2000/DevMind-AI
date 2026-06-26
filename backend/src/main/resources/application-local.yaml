@@ -1,0 +1,45 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:devminddb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: password
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+    open-in-view: false
+
+# To run with PostgreSQL locally, uncomment the following block and comment the H2 block above:
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/devmind_db
+#    username: postgres
+#    password: password
+#    driver-class-name: org.postgresql.Driver
+#  jpa:
+#    properties:
+#      hibernate:
+#        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+devmind:
+  security:
+    jwt:
+      secret: 3c9e6d42bb243e8d2e85bf95ef61a0fe11fb2685718dfd5a2cd5ff9a3e2cd4e0
+      access-token-expiration-ms: 900000 # 15 minutes (short-lived)
+      refresh-token-expiration-ms: 86400000 # 24 hours
+    cors:
+      allowed-origins: http://localhost:4200
+    brute-force:
+      max-attempts: 5
+      lockout-duration-ms: 900000 # 15 minutes

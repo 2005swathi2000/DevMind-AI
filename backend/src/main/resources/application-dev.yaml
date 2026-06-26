@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+
+devmind:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      access-token-expiration-ms: 900000
+      refresh-token-expiration-ms: 86400000
+    cors:
+      allowed-origins: ${ALLOWED_ORIGINS:http://localhost:4200}
+    brute-force:
+      max-attempts: 5
+      lockout-duration-ms: 900000
