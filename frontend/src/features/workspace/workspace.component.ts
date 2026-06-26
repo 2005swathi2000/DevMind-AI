@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
 import { WorkspaceService, WorkspaceSessionResponse } from '../../core/services/workspace.service';
+import { JobsService } from '../../core/services/jobs.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastrService } from 'ngx-toastr';
 import { Router, RouterLink } from '@angular/router';
@@ -36,6 +37,9 @@ import { Router, RouterLink } from '@angular/router';
         <div class="flex items-center gap-6">
           <a routerLink="/dashboard" class="text-sm font-semibold text-slate-400 hover:text-white transition duration-150">
             Dashboard
+          </a>
+          <a routerLink="/jobs" class="text-sm font-semibold text-slate-400 hover:text-white transition duration-150">
+            Jobs
           </a>
           <div class="h-4 w-px bg-slate-800"></div>
           @if (user(); as u) {
@@ -202,6 +206,10 @@ import { Router, RouterLink } from '@angular/router';
                         class="px-5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 rounded-xl disabled:opacity-40 transition duration-150 shadow-lg shadow-indigo-500/10">
                   Run Analysis
                 </button>
+                <button (click)="runBackground()" [disabled]="!code.trim()"
+                        class="px-4 py-1.5 text-xs font-bold text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-800 rounded-xl disabled:opacity-40 transition duration-150">
+                  Run Background
+                </button>
               }
             </div>
           </div>
@@ -269,8 +277,10 @@ import { Router, RouterLink } from '@angular/router';
 })
 export class WorkspaceComponent implements OnInit, AfterViewChecked {
   private workspaceService = inject(WorkspaceService);
+  private jobsService = inject(JobsService);
   private authService = inject(AuthService);
   private toastr = inject(ToastrService);
+  private router = inject(Router);
 
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
 
@@ -449,6 +459,27 @@ export class WorkspaceComponent implements OnInit, AfterViewChecked {
       },
       this.abortController.signal
     );
+  }
+
+  runBackground() {
+    if (!this.code.trim()) return;
+
+    const payload = {
+      code: this.code,
+      toolType: this.selectedTool(),
+      language: this.selectedLanguage,
+      provider: this.selectedProvider
+    };
+
+    this.jobsService.submitJob(payload).subscribe({
+      next: (res) => {
+        this.toastr.success('Background job submitted successfully!', 'Success');
+        this.router.navigate(['/jobs']);
+      },
+      error: (err) => {
+        this.toastr.error(err.error?.message || 'Failed to submit background job', 'Error');
+      }
+    });
   }
 
   loadSession(item: WorkspaceSessionResponse) {
