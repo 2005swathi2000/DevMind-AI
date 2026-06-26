@@ -6,7 +6,7 @@ import { RouterOutlet } from '@angular/router';
   standalone: true,
   imports: [RouterOutlet],
   template: `
-    <div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white antialiased">
+    <div class="min-h-screen bg-brand-bg text-brand-text flex flex-col font-sans selection:bg-brand-surface selection:text-brand-text antialiased">
       <router-outlet></router-outlet>
     </div>
   `

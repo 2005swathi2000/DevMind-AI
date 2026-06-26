@@ -3,43 +3,32 @@
 @import "tailwindcss/utilities";
 
 @import "ngx-toastr/toastr";
+@import "./styles/theme.scss";
 
-:root {
-  --font-title: 'Outfit', sans-serif;
-  --font-body: 'Plus Jakarta Sans', sans-serif;
-}
-
-body {
-  font-family: var(--font-body);
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-title);
-}
-
-/* premium SaaS styles */
+/* Custom classes extending the design system */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(220, 195, 170, 0.4);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
 }
 
 .glass-card {
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(220, 195, 170, 0.65);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-low);
+  border-radius: var(--radius-lg);
 }
 
-.glass-input {
-  background: rgba(7, 11, 22, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: white;
-  transition: all 0.3s ease;
-  
-  &:focus {
-    border-color: rgba(16, 185, 129, 0.5);
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
-    outline: none;
+.card-brand {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-low);
+  transition: all 220ms ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-medium);
   }
 }

@@ -13,45 +13,45 @@ import { Router, RouterLink } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FormsModule, MonacoEditorModule, RouterLink],
   template: `
-    <div class="flex flex-col h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
+    <div class="flex flex-col h-screen bg-brand-bg text-brand-text font-sans overflow-hidden">
       <!-- Glow background accents -->
       <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div class="absolute -top-[40%] -left-[20%] w-[80%] h-[80%] rounded-full bg-indigo-500/5 blur-[120px]"></div>
-        <div class="absolute -bottom-[40%] -right-[20%] w-[80%] h-[80%] rounded-full bg-purple-500/5 blur-[120px]"></div>
+        <div class="absolute -top-[40%] -left-[20%] w-[80%] h-[80%] rounded-full bg-brand-primary/5 blur-[120px]"></div>
+        <div class="absolute -bottom-[40%] -right-[20%] w-[80%] h-[80%] rounded-full bg-brand-surface/20 blur-[120px]"></div>
       </div>
 
       <!-- Navbar -->
-      <nav class="border-b border-slate-900 bg-slate-950/80 backdrop-blur-xl px-6 py-3.5 flex items-center justify-between z-10 shrink-0">
+      <nav class="border-b border-brand-border bg-brand-bg/80 backdrop-blur-xl px-6 py-3.5 flex items-center justify-between z-10 shrink-0">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-white text-lg shadow shadow-indigo-500/20">
+          <div class="w-8 h-8 rounded-lg bg-brand-primary flex items-center justify-center font-bold text-white text-lg shadow-low transition duration-300 hover:scale-105">
             D
           </div>
           <div>
-            <span class="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 tracking-wide text-base">
+            <span class="font-extrabold text-brand-primary tracking-wide text-base block">
               DEVMIND AI
             </span>
-            <span class="text-[10px] block text-slate-400 font-medium">AI Developer Workspace</span>
+            <span class="text-[10px] block text-brand-text/75 font-semibold uppercase tracking-wider">AI Developer Workspace</span>
           </div>
         </div>
 
         <div class="flex items-center gap-6">
-          <a routerLink="/dashboard" class="text-sm font-semibold text-slate-400 hover:text-white transition duration-150">
+          <a routerLink="/dashboard" class="text-sm font-semibold text-brand-text/80 hover:text-brand-primary transition duration-150">
             Dashboard
           </a>
-          <a routerLink="/jobs" class="text-sm font-semibold text-slate-400 hover:text-white transition duration-150">
+          <a routerLink="/jobs" class="text-sm font-semibold text-brand-text/80 hover:text-brand-primary transition duration-150">
             Jobs
           </a>
-          <div class="h-4 w-px bg-slate-800"></div>
+          <div class="h-4 w-px bg-brand-border"></div>
           @if (user(); as u) {
             <div class="flex items-center gap-3">
               @if (u.profilePicture) {
                 <img [src]="u.profilePicture" alt="Profile" class="w-7 h-7 rounded-full object-cover">
               } @else {
-                <div class="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-indigo-400 text-xs font-semibold uppercase">
+                <div class="w-7 h-7 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-brand-primary text-xs font-semibold uppercase">
                   {{ u.firstName.charAt(0) }}{{ u.lastName.charAt(0) }}
                 </div>
               }
-              <span class="text-sm text-slate-300 font-medium hidden md:inline">{{ u.firstName }}</span>
+              <span class="text-sm text-brand-text font-bold hidden md:inline">{{ u.firstName }}</span>
             </div>
           }
         </div>
@@ -61,19 +61,19 @@ import { Router, RouterLink } from '@angular/router';
       <div class="flex-1 flex overflow-hidden z-10">
         
         <!-- COLUMN 1: Sidebar & History -->
-        <aside class="w-72 border-r border-slate-900 bg-slate-950/40 flex flex-col overflow-hidden shrink-0">
+        <aside class="w-72 border-r border-brand-border bg-brand-primary text-brand-bg flex flex-col overflow-hidden shrink-0">
           
           <!-- Tool Selection -->
-          <div class="p-4 border-b border-slate-900">
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">AI Operations</label>
+          <div class="p-4 border-b border-brand-primaryHover">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-bg/60 mb-2">AI Operations</label>
             <div class="space-y-1">
               @for (tool of tools; track tool.value) {
                 <button (click)="selectTool(tool.value)"
-                        [class]="selectedTool() === tool.value ? 'bg-indigo-500/10 border-indigo-500/30 text-white' : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'"
-                        class="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold border flex items-center justify-between transition duration-200">
+                        [class]="selectedTool() === tool.value ? 'bg-brand-bg text-brand-primary shadow-low' : 'text-brand-bg/75 hover:text-brand-bg hover:bg-brand-primaryHover'"
+                        class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition duration-200">
                   <span>{{ tool.label }}</span>
                   @if (selectedTool() === tool.value) {
-                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse"></span>
                   }
                 </button>
               }
@@ -81,12 +81,12 @@ import { Router, RouterLink } from '@angular/router';
           </div>
 
           <!-- Quick Templates -->
-          <div class="p-4 border-b border-slate-900">
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Quick Templates</label>
+          <div class="p-4 border-b border-brand-primaryHover">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-brand-bg/60 mb-2">Quick Templates</label>
             <div class="grid grid-cols-2 gap-2">
               @for (tpl of templates; track tpl.name) {
                 <button (click)="applyTemplate(tpl)"
-                        class="px-2 py-1.5 rounded-lg border border-slate-900 hover:border-slate-800 bg-slate-900/30 hover:bg-slate-900/50 text-[10px] font-bold text-slate-400 hover:text-white text-left truncate transition duration-150">
+                        class="px-2 py-1.5 rounded-lg border border-brand-primaryHover hover:border-brand-bg bg-brand-primaryHover/40 hover:bg-brand-primaryHover text-[10px] font-bold text-brand-bg/80 hover:text-white text-left truncate transition duration-150">
                   {{ tpl.name }}
                 </button>
               }
@@ -95,34 +95,34 @@ import { Router, RouterLink } from '@angular/router';
 
           <!-- History List -->
           <div class="flex-1 flex flex-col overflow-hidden">
-            <div class="p-4 py-3 border-b border-slate-900 flex items-center justify-between shrink-0">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">History & Saves</span>
-              <button (click)="loadHistory()" class="text-[10px] font-bold text-indigo-400 hover:text-indigo-300">Refresh</button>
+            <div class="p-4 py-3 border-b border-brand-primaryHover flex items-center justify-between shrink-0">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-brand-bg/60">History & Saves</span>
+              <button (click)="loadHistory()" class="text-[10px] font-bold text-brand-bg hover:text-white">Refresh</button>
             </div>
             <div class="flex-1 overflow-y-auto p-3 space-y-2">
               @if (historyList().length === 0) {
-                <div class="text-center py-8 text-xs text-slate-600 font-medium">No saved sessions.</div>
+                <div class="text-center py-8 text-xs text-brand-bg/50 font-medium">No saved sessions.</div>
               }
               @for (item of historyList(); track item.id) {
-                <div [class]="activeSessionId() === item.id ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-slate-900 bg-slate-900/10 hover:bg-slate-900/40'"
+                <div [class]="activeSessionId() === item.id ? 'border-brand-bg bg-brand-bg/10' : 'border-brand-primaryHover bg-brand-primaryHover/20 hover:bg-brand-primaryHover/40'"
                      class="group p-3 rounded-xl border flex flex-col gap-1.5 transition duration-200 relative cursor-pointer"
                      (click)="loadSession(item)">
                   <div class="flex items-start justify-between gap-2">
-                    <span class="text-xs font-bold text-slate-200 truncate pr-6">{{ item.title }}</span>
+                    <span class="text-xs font-bold text-brand-bg truncate pr-6">{{ item.title }}</span>
                     <!-- Actions overlay -->
                     <div class="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition duration-150">
-                      <button (click)="togglePin($event, item)" class="p-1 rounded bg-slate-950 border border-slate-800 hover:text-indigo-400">
+                      <button (click)="togglePin($event, item)" class="p-1 rounded bg-brand-primary border border-brand-primaryHover hover:text-white text-brand-bg/85">
                         <span class="text-[10px]">{{ item.pinned ? '📌' : '📍' }}</span>
                       </button>
-                      <button (click)="toggleFavorite($event, item)" class="p-1 rounded bg-slate-950 border border-slate-800 hover:text-yellow-400">
+                      <button (click)="toggleFavorite($event, item)" class="p-1 rounded bg-brand-primary border border-brand-primaryHover hover:text-white text-brand-bg/85">
                         <span class="text-[10px]">{{ item.favorite ? '⭐' : '☆' }}</span>
                       </button>
-                      <button (click)="deleteSession($event, item.id)" class="p-1 rounded bg-slate-950 border border-slate-800 hover:text-rose-500">
+                      <button (click)="deleteSession($event, item.id)" class="p-1 rounded bg-brand-primary border border-brand-primaryHover hover:text-rose-400 text-brand-bg/85">
                         <span class="text-[10px]">🗑️</span>
                       </button>
                     </div>
                   </div>
-                  <div class="flex items-center justify-between text-[9px] text-slate-500 font-semibold uppercase">
+                  <div class="flex items-center justify-between text-[9px] text-brand-bg/60 font-semibold uppercase">
                     <span>{{ item.language }}</span>
                     <span>{{ item.createdAt | date:'shortTime' }}</span>
                   </div>
@@ -133,14 +133,14 @@ import { Router, RouterLink } from '@angular/router';
         </aside>
 
         <!-- COLUMN 2: Monaco Editor -->
-        <div class="flex-1 flex flex-col border-r border-slate-900 bg-slate-950">
+        <div class="flex-1 flex flex-col border-r border-brand-border bg-brand-bg">
           
           <!-- Editor Config Panel -->
-          <div class="px-4 py-2 bg-slate-950/60 border-b border-slate-900 flex items-center justify-between shrink-0">
+          <div class="px-4 py-2 bg-brand-surface/40 border-b border-brand-border flex items-center justify-between shrink-0">
             <div class="flex items-center gap-3">
               <!-- Language Selector -->
               <select [(ngModel)]="selectedLanguage" (change)="onLanguageChange()"
-                      class="bg-slate-900 border border-slate-800 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none focus:border-indigo-500">
+                      class="bg-brand-editorBg border border-brand-border text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none focus:border-brand-primary">
                 <option value="java">Java</option>
                 <option value="python">Python</option>
                 <option value="typescript">TypeScript</option>
@@ -150,14 +150,15 @@ import { Router, RouterLink } from '@angular/router';
 
               <!-- Theme Selector -->
               <select [(ngModel)]="selectedTheme" (change)="onThemeChange()"
-                      class="bg-slate-900 border border-slate-800 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none focus:border-indigo-500">
-                <option value="vs-dark">Dark Theme</option>
-                <option value="vs">Light Theme</option>
+                      class="bg-brand-editorBg border border-brand-border text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none focus:border-brand-primary">
+                <option value="devmind-light">Brand Light Theme</option>
+                <option value="vs">Monaco Default Light</option>
+                <option value="vs-dark">Monaco Default Dark</option>
               </select>
 
               <!-- Provider Selector -->
               <select [(ngModel)]="selectedProvider"
-                      class="bg-slate-900 border border-slate-800 text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none focus:border-indigo-500">
+                      class="bg-brand-editorBg border border-brand-border text-xs font-semibold rounded-lg px-2.5 py-1 focus:outline-none focus:border-brand-primary">
                 <option value="gemini">Gemini 2.5 Flash</option>
                 <option value="openai">OpenAI GPT-5 (Planned)</option>
                 <option value="claude">Claude Sonnet (Planned)</option>
@@ -165,49 +166,49 @@ import { Router, RouterLink } from '@angular/router';
 
               <!-- Word Wrap Toggle -->
               <label class="flex items-center gap-1.5 cursor-pointer select-none">
-                <input type="checkbox" [(ngModel)]="wordWrap" (change)="onWordWrapChange()" class="rounded border-slate-800 bg-slate-900 text-indigo-600 focus:ring-indigo-500">
-                <span class="text-[10px] text-slate-400 font-semibold uppercase">Wrap</span>
+                <input type="checkbox" [(ngModel)]="wordWrap" (change)="onWordWrapChange()" class="rounded border-brand-border bg-brand-editorBg text-brand-primary focus:ring-brand-primary">
+                <span class="text-[10px] text-brand-text/75 font-semibold uppercase">Wrap</span>
               </label>
             </div>
 
             <!-- Font Size -->
             <div class="flex items-center gap-2">
-              <span class="text-[10px] text-slate-500 font-semibold uppercase">Font</span>
+              <span class="text-[10px] text-brand-text/75 font-semibold uppercase">Font</span>
               <input type="number" [(ngModel)]="fontSize" (change)="onFontSizeChange()" min="10" max="24"
-                     class="w-12 bg-slate-900 border border-slate-800 text-xs font-bold rounded-lg px-1.5 py-0.5 text-center focus:outline-none">
+                     class="w-12 bg-brand-editorBg border border-brand-border text-xs font-bold rounded-lg px-1.5 py-0.5 text-center focus:outline-none focus:border-brand-primary">
             </div>
           </div>
 
           <!-- Code Editor Instance -->
-          <div class="flex-1 relative bg-slate-950">
-            <ngx-monaco-editor [options]="editorOptions" [(ngModel)]="code" class="h-full w-full"></ngx-monaco-editor>
+          <div class="flex-1 relative bg-brand-editorBg">
+            <ngx-monaco-editor [options]="editorOptions" [(ngModel)]="code" (init)="onEditorInit($event)" class="h-full w-full"></ngx-monaco-editor>
           </div>
 
           <!-- Counter Bar & Trigger -->
-          <div class="px-4 py-3 bg-slate-950/80 border-t border-slate-900 flex items-center justify-between shrink-0">
+          <div class="px-4 py-3 bg-brand-surface/40 border-t border-brand-border flex items-center justify-between shrink-0">
             <!-- Metrics -->
-            <div class="flex items-center gap-4 text-[10px] text-slate-500 font-bold uppercase">
-              <span>Chars: <strong class="text-slate-300">{{ charCount() }}</strong></span>
-              <span>Lines: <strong class="text-slate-300">{{ lineCount() }}</strong></span>
-              <span>Tokens Est: <strong class="text-slate-300">{{ tokenEstimate() }}</strong></span>
+            <div class="flex items-center gap-4 text-[10px] text-brand-text/75 font-bold uppercase">
+              <span>Chars: <strong class="text-brand-text">{{ charCount() }}</strong></span>
+              <span>Lines: <strong class="text-brand-text">{{ lineCount() }}</strong></span>
+              <span>Tokens Est: <strong class="text-brand-text">{{ tokenEstimate() }}</strong></span>
             </div>
 
             <!-- Trigger Actions -->
             <div class="flex items-center gap-2">
-              <button (click)="clearEditor()" class="px-3.5 py-1.5 text-xs font-bold bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl transition duration-150">
+              <button (click)="clearEditor()" class="btn-secondary px-3.5 py-1.5 text-xs">
                 Clear
               </button>
               @if (isGenerating()) {
-                <button (click)="cancelGeneration()" class="px-4 py-1.5 text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl transition duration-150">
+                <button (click)="cancelGeneration()" class="px-4 py-1.5 text-xs font-bold bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 border border-rose-500/30 rounded-xl transition duration-150">
                   Cancel
                 </button>
               } @else {
                 <button (click)="runAnalysis()" [disabled]="!code.trim()"
-                        class="px-5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 rounded-xl disabled:opacity-40 transition duration-150 shadow-lg shadow-indigo-500/10">
+                        class="btn-primary px-5 py-1.5 text-xs shadow-low hover:shadow-medium">
                   Run Analysis
                 </button>
                 <button (click)="runBackground()" [disabled]="!code.trim()"
-                        class="px-4 py-1.5 text-xs font-bold text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-800 rounded-xl disabled:opacity-40 transition duration-150">
+                        class="btn-secondary px-4 py-1.5 text-xs shadow-low hover:shadow-medium">
                   Run Background
                 </button>
               }
@@ -216,57 +217,56 @@ import { Router, RouterLink } from '@angular/router';
         </div>
 
         <!-- COLUMN 3: AI Response Streaming Viewer -->
-        <div class="w-[500px] flex flex-col bg-slate-950 shrink-0">
+        <div class="w-[500px] flex flex-col bg-brand-bg shrink-0">
           
           <!-- Actions & Header -->
-          <div class="px-4 py-2 bg-slate-950/60 border-b border-slate-900 flex items-center justify-between shrink-0">
-            <span class="text-xs font-bold text-slate-300">AI Response Engine</span>
+          <div class="px-4 py-2 bg-brand-surface/40 border-b border-brand-border flex items-center justify-between shrink-0">
+            <span class="text-xs font-bold text-brand-text">AI Response Engine</span>
             
             <div class="flex items-center gap-2">
               <!-- Auto Scroll Checkbox -->
               <label class="flex items-center gap-1.5 cursor-pointer select-none">
-                <input type="checkbox" [(ngModel)]="autoScroll" class="rounded border-slate-800 bg-slate-900 text-indigo-600 focus:ring-indigo-500">
-                <span class="text-[9px] text-slate-400 font-bold uppercase">AutoScroll</span>
+                <input type="checkbox" [(ngModel)]="autoScroll" class="rounded border-brand-border bg-brand-editorBg text-brand-primary focus:ring-brand-primary">
+                <span class="text-[9px] text-brand-text/75 font-bold uppercase">AutoScroll</span>
               </label>
 
               <!-- Copy response -->
-              <button (click)="copyResponse()" [disabled]="!responseStream()" class="p-1 rounded bg-slate-900 border border-slate-800 hover:text-indigo-400 text-slate-400 disabled:opacity-40" title="Copy to Clipboard">
-                <span class="text-[10px]">📋 Copy</span>
+              <button (click)="copyResponse()" [disabled]="!responseStream()" class="p-1 rounded bg-brand-editorBg border border-brand-border hover:text-brand-primary text-brand-text disabled:opacity-40 text-[10px]" title="Copy to Clipboard">
+                📋 Copy
               </button>
 
               <!-- Export Select -->
               <select (change)="exportResponse($event)" [disabled]="!responseStream()"
-                      class="bg-slate-900 border border-slate-800 text-[10px] font-bold uppercase rounded-lg px-2 py-1 focus:outline-none">
+                      class="bg-brand-editorBg border border-brand-border text-[10px] font-bold uppercase rounded-lg px-2 py-1 focus:outline-none">
                 <option value="">Export</option>
                 <option value="md">Markdown (.md)</option>
                 <option value="txt">Text (.txt)</option>
-                <option value="pdf">PDF Mock (.pdf)</option>
               </select>
             </div>
           </div>
 
           <!-- Output Box -->
-          <div class="flex-1 overflow-y-auto p-6 bg-slate-950/40 relative" #scrollContainer>
+          <div class="flex-1 overflow-y-auto p-6 bg-brand-editorBg border-l-[6px] border-brand-primary relative" #scrollContainer>
             @if (!responseStream() && !isGenerating()) {
-              <div class="flex flex-col items-center justify-center h-full text-center p-6 text-slate-600">
-                <div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-xl mb-3">
+              <div class="flex flex-col items-center justify-center h-full text-center p-6 text-brand-text/60">
+                <div class="w-12 h-12 rounded-xl bg-brand-surface border border-brand-border flex items-center justify-center text-xl mb-3 shadow-low">
                   ✨
                 </div>
-                <h4 class="text-sm font-bold text-slate-400">Ready for Analysis</h4>
-                <p class="text-xs max-w-xs mt-1 text-slate-500">
+                <h4 class="text-sm font-bold text-brand-text">Ready for Analysis</h4>
+                <p class="text-xs max-w-xs mt-1 text-brand-text/80 leading-relaxed">
                   Select an operation on the left, write or paste code in the Monaco Editor, and click "Run Analysis".
                 </p>
               </div>
             }
 
             <!-- Streaming results -->
-            <div class="prose prose-invert prose-slate text-sm max-w-none text-slate-300 leading-relaxed break-words"
+            <div class="prose prose-slate text-sm max-w-none text-brand-text leading-relaxed break-words"
                  [innerHTML]="renderedMarkdown()">
             </div>
 
             <!-- Typing cursor block -->
             @if (isGenerating()) {
-              <span class="inline-block w-2.5 h-4 ml-1 bg-indigo-500 animate-pulse align-middle"></span>
+              <span class="inline-block w-2.5 h-4 ml-1 bg-brand-primary animate-pulse align-middle"></span>
             }
           </div>
         </div>
@@ -295,7 +295,7 @@ export class WorkspaceComponent implements OnInit, AfterViewChecked {
   // Form states
   code = `// Write or paste your code here\npublic class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`;
   selectedLanguage = 'java';
-  selectedTheme = 'vs-dark';
+  selectedTheme = 'devmind-light';
   selectedProvider = 'gemini';
   wordWrap = true;
   fontSize = 14;
@@ -306,10 +306,10 @@ export class WorkspaceComponent implements OnInit, AfterViewChecked {
 
   // Monaco Configurations
   editorOptions = {
-    theme: 'vs-dark',
+    theme: 'devmind-light',
     language: 'java',
     fontSize: 14,
-    minimap: { enabled: true },
+    minimap: { enabled: false },
     wordWrap: 'on',
     automaticLayout: true
   };
@@ -364,6 +364,38 @@ export class WorkspaceComponent implements OnInit, AfterViewChecked {
       code: `def fibonacci(n):\n    if n <= 0:\n        return []\n    elif n == 1:\n        return [0]\n    fib = [0, 1]\n    while len(fib) < n:\n        fib.append(fib[-1] + fib[-2])\n    return fib`
     }
   ];
+
+  onEditorInit(editor: any) {
+    const monaco = (window as any).monaco;
+    if (monaco) {
+      monaco.editor.defineTheme('devmind-light', {
+        base: 'vs',
+        inherit: true,
+        rules: [
+          { token: 'comment', foreground: 'A88B76', fontStyle: 'italic' },
+          { token: 'keyword', foreground: '810B38', fontStyle: 'bold' },
+          { token: 'string', foreground: '541A1A' },
+          { token: 'number', foreground: 'B45309' },
+          { token: 'type', foreground: '810B38' },
+          { token: 'class', foreground: '810B38' }
+        ],
+        colors: {
+          'editor.background': '#F7EFE6',
+          'editor.foreground': '#541A1A',
+          'editorLineNumber.foreground': '#A88B76',
+          'editorLineNumber.activeForeground': '#810B38',
+          'editor.lineHighlightBackground': '#EFE2D2',
+          'editor.selectionBackground': '#DCC3AA',
+          'editorCursor.foreground': '#810B38'
+        }
+      });
+      monaco.editor.setTheme('devmind-light');
+    }
+    const model = editor.getModel();
+    if (model) {
+      editor.setModelLanguage(model, this.selectedLanguage.toLowerCase());
+    }
+  }
 
   ngOnInit() {
     this.loadHistory();

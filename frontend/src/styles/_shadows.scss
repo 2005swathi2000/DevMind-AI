@@ -1,0 +1,17 @@
+:root {
+  --shadow-low: 0 4px 12px rgba(84, 26, 26, 0.06);
+  --shadow-medium: 0 8px 24px rgba(84, 26, 26, 0.10);
+  --shadow-high: 0 18px 48px rgba(84, 26, 26, 0.16);
+}
+
+.shadow-low {
+  box-shadow: var(--shadow-low);
+}
+
+.shadow-medium {
+  box-shadow: var(--shadow-medium);
+}
+
+.shadow-high {
+  box-shadow: var(--shadow-high);
+}
