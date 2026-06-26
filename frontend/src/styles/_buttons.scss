@@ -19,12 +19,18 @@
 
 .btn-primary {
   @extend .btn;
-  background-color: var(--primary);
+  background: linear-gradient(135deg, var(--secondary) 0%, var(--highlight) 100%);
   color: #ffffff;
+  border-color: rgba(255, 112, 191, 0.4);
 
   &:hover:not(:disabled) {
-    background-color: var(--primary-hover);
-    transform: scale(1.02);
+    background: linear-gradient(135deg, var(--highlight) 0%, var(--accent) 100%);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 24px 0 rgba(213, 82, 163, 0.4);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0px) scale(0.98);
   }
 }
 
@@ -33,9 +39,15 @@
   background-color: var(--surface);
   color: var(--text);
   border-color: var(--border);
+  backdrop-filter: blur(12px);
 
   &:hover:not(:disabled) {
-    filter: brightness(0.95);
-    transform: scale(1.02);
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 112, 191, 0.25);
+    transform: translateY(-2px) scale(1.02);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0px) scale(0.98);
   }
 }

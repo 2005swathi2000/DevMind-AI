@@ -10,9 +10,13 @@ module.exports = {
         brand: {
           primary: 'var(--primary)',
           primaryHover: 'var(--primary-hover)',
+          secondary: 'var(--secondary)',
+          accent: 'var(--accent)',
+          highlight: 'var(--highlight)',
           bg: 'var(--background)',
           surface: 'var(--surface)',
           text: 'var(--text)',
+          textMuted: 'var(--text-muted)',
           border: 'var(--border)',
           editorBg: 'var(--editor-bg)',
           editorLine: 'var(--editor-line)',
