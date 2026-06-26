@@ -31,10 +31,12 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     private final AiService aiService;
     private final AnalysisResponseCache responseCache;
     private final RateLimiterService rateLimiterService;
+    private final com.devmind.analytics.service.AnalyticsService analyticsService;
 
     @Override
     public void analyze(WorkspaceRequest request, User user, SseEmitter emitter) {
         rateLimiterService.checkRateLimit(user.getId());
+        String provider = request.getProvider() != null ? request.getProvider() : "gemini";
 
         String codeHash = responseCache.calculateHash(request.getToolType(), request.getCode());
         var cachedSessionOpt = responseCache.get(request.getToolType(), request.getCode(), user);
@@ -42,6 +44,12 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         if (cachedSessionOpt.isPresent()) {
             WorkspaceSession cachedSession = cachedSessionOpt.get();
             log.info("Cache hit for code hash: {}", codeHash);
+            
+            // Record analytics
+            analyticsService.record(user, provider, request.getToolType(), 0L,
+                    request.getCode().length(), cachedSession.getAiResponse().length(),
+                    true, true, null);
+
             try {
                 emitter.send(SseEmitter.event().data(cachedSession.getAiResponse()));
                 emitter.complete();
@@ -57,7 +65,6 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         long startTime = System.currentTimeMillis();
         StringBuilder responseBuilder = new StringBuilder();
 
-        String provider = request.getProvider() != null ? request.getProvider() : "gemini";
         aiService.generateStream(provider, prompt, new StreamCallback() {
             @Override
             public void onChunk(String chunk) throws Exception {
@@ -88,13 +95,26 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                         .build();
 
                 repository.save(session);
+
+                // Record analytics success
+                analyticsService.record(user, provider, request.getToolType(), duration,
+                        request.getCode().length(), finalResponse.length(),
+                        false, true, null);
+
                 emitter.complete();
                 log.info("Analysis session saved successfully with ID: {}", session.getId());
             }
 
             @Override
             public void onError(Throwable throwable) {
+                long duration = System.currentTimeMillis() - startTime;
                 log.error("Error streaming content from AI provider", throwable);
+
+                // Record analytics failure
+                analyticsService.record(user, provider, request.getToolType(), duration,
+                        request.getCode().length(), 0,
+                        false, false, throwable.getClass().getSimpleName());
+
                 emitter.completeWithError(throwable);
             }
         });
