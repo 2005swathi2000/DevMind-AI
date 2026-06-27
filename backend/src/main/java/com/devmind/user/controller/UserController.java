@@ -29,7 +29,7 @@ public class UserController {
         if (userOptional.isEmpty()) {
             return ResponseEntity.status(404).body(ApiResponse.error(404, "User not found"));
         }
-        return ResponseEntity.ok(ApiResponse.success(userOptional.get(), "Profile retrieved"));
+        return ResponseEntity.ok(ApiResponse.success("Profile retrieved", userOptional.get()));
     }
 
     @PutMapping("/profile")
@@ -62,6 +62,6 @@ public class UserController {
 
         userRepository.save(user);
 
-        return ResponseEntity.ok(ApiResponse.success(user, "Profile updated successfully"));
+        return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", user));
     }
 }
