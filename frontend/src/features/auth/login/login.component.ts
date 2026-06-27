@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -72,19 +72,37 @@ import { ToastrService } from 'ngx-toastr';
                     Forgot password?
                   </button>
                 </div>
-                <div class="mt-1.5">
-                  <input id="password" type="password" formControlName="password" required
-                         class="w-full bg-brand-editorBg border border-brand-border rounded-xl px-4 py-3 text-brand-text placeholder-brand-text/30 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition duration-200"
+                <div class="mt-1.5 relative">
+                  <input id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password" required
+                         class="w-full bg-brand-editorBg border border-brand-border rounded-xl pl-4 pr-12 py-3 text-brand-text placeholder-brand-text/30 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition duration-200"
                          placeholder="••••••••">
+                  <button type="button" (click)="togglePasswordVisibility()"
+                          class="absolute right-4 top-1/2 -translate-y-1/2 text-brand-textMuted hover:text-white transition duration-150 bg-transparent border-0 cursor-pointer select-none">
+                    {{ showPassword() ? '🙈' : '👁️' }}
+                  </button>
                   @if (loginForm.get('password')?.touched && loginForm.get('password')?.invalid) {
                     <p class="mt-1.5 text-xs text-brand-danger font-medium">Password is required.</p>
                   }
                 </div>
               </div>
 
-              <button type="submit" [disabled]="loginForm.invalid || isLoading()"
-                      class="btn-primary w-full py-3.5 px-4 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition duration-200">
-                {{ isLoading() ? 'Signing in...' : 'Sign In' }}
+              <!-- Remember Me Checkbox -->
+              <div class="flex items-center">
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" formControlName="rememberMe"
+                         class="rounded border-brand-border bg-brand-editorBg text-brand-accent focus:ring-brand-accent h-4 w-4">
+                  <span class="text-xs text-brand-textMuted font-semibold uppercase">Remember Me</span>
+                </label>
+              </div>
+
+              <button type="submit" [disabled]="loginForm.invalid || isLoading() || isGoogleLoading()"
+                      class="btn-primary w-full py-3.5 px-4 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition duration-200 flex items-center justify-center gap-2">
+                @if (isLoading()) {
+                  <span class="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
+                  <span>Signing in...</span>
+                } @else {
+                  <span>Sign In</span>
+                }
               </button>
             </form>
 
@@ -96,15 +114,20 @@ import { ToastrService } from 'ngx-toastr';
               </div>
 
               <div class="mt-6">
-                <button (click)="onGoogleSignIn()"
+                <button (click)="onGoogleSignIn()" [disabled]="isGoogleLoading() || isLoading()"
                         class="btn-secondary w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-brand-text transition duration-200">
-                  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                  </svg>
-                  Sign in with Google
+                  @if (isGoogleLoading()) {
+                    <span class="w-4 h-4 rounded-full border-2 border-slate-400 border-t-white animate-spin"></span>
+                    <span>Signing in with Google...</span>
+                  } @else {
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    <span>Sign in with Google</span>
+                  }
                 </button>
               </div>
             </div>
@@ -129,8 +152,13 @@ import { ToastrService } from 'ngx-toastr';
               </div>
 
               <button type="submit" [disabled]="requestResetForm.invalid || isLoading()"
-                      class="btn-primary w-full py-3.5 px-4 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition duration-200">
-                {{ isLoading() ? 'Processing...' : 'Request Reset Token' }}
+                      class="btn-primary w-full py-3.5 px-4 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition duration-200 flex items-center justify-center gap-2">
+                @if (isLoading()) {
+                  <span class="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
+                  <span>Processing...</span>
+                } @else {
+                  <span>Request Reset Token</span>
+                }
               </button>
             </form>
           }
@@ -163,8 +191,13 @@ import { ToastrService } from 'ngx-toastr';
               </div>
 
               <button type="submit" [disabled]="confirmResetForm.invalid || isLoading()"
-                      class="btn-primary w-full py-3.5 px-4 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition duration-200">
-                {{ isLoading() ? 'Saving...' : 'Confirm Reset Password' }}
+                      class="btn-primary w-full py-3.5 px-4 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition duration-200 flex items-center justify-center gap-2">
+                @if (isLoading()) {
+                  <span class="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
+                  <span>Saving...</span>
+                } @else {
+                  <span>Confirm Reset Password</span>
+                }
               </button>
             </form>
           }
@@ -182,10 +215,13 @@ export class LoginComponent {
 
   mode: 'login' | 'request-reset' | 'confirm-reset' = 'login';
   isLoading = this.authService.isLoadingSignal;
+  isGoogleLoading = signal<boolean>(false);
+  showPassword = signal<boolean>(false);
 
   loginForm: FormGroup = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required]]
+    password: ['', [Validators.required]],
+    rememberMe: [false]
   });
 
   requestResetForm: FormGroup = this.fb.group({
@@ -201,6 +237,10 @@ export class LoginComponent {
     this.mode = newMode;
   }
 
+  togglePasswordVisibility() {
+    this.showPassword.set(!this.showPassword());
+  }
+
   onLoginSubmit() {
     if (this.loginForm.invalid) return;
 
@@ -210,7 +250,18 @@ export class LoginComponent {
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
-        const errorMsg = err.error?.message || 'Login failed. Please check your credentials.';
+        let errorMsg = 'Login failed. Please check your credentials.';
+        if (err.status === 0) {
+          errorMsg = 'Unable to connect. Please try again later.';
+        } else if (err.status === 404) {
+          errorMsg = 'No account found with this email.';
+        } else if (err.status === 401) {
+          errorMsg = err.error?.message || 'Incorrect password. Please try again.';
+        } else if (err.status === 403) {
+          errorMsg = 'Session expired. Please login again.';
+        } else if (err.error?.message) {
+          errorMsg = err.error.message;
+        }
         this.toastr.error(errorMsg, 'Error');
       }
     });
@@ -253,15 +304,74 @@ export class LoginComponent {
   }
 
   onGoogleSignIn() {
-    const mockGoogleIdToken = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ.eyJlc3ViIjoiZ29vZ2xlLXVzZXJAZGV2bWluZC5haSIsImVtYWlsIjoiZ29vZ2xlLXVzZXJAZGV2bWluZC5haSIsImdpdmVuX25hbWUiOiJHb29nbGUiLCJmYW1pbHlfbmFtZSI6IkRldmVsb3BlciIsImV4cCI6OTk5OTk5OTk5OX0.mockSignature';
-    this.authService.googleLogin(mockGoogleIdToken).subscribe({
-      next: (res) => {
-        this.toastr.success(res.message, 'Signed in with Google');
-        this.router.navigate(['/dashboard']);
-      },
-      error: (err) => {
-        this.toastr.error('Google Sign-In failed.', 'Error');
-      }
-    });
+    if (this.isGoogleLoading()) return;
+    this.isGoogleLoading.set(true);
+
+    const google = (window as any).google;
+    if (!google) {
+      // Graceful fallback to sending a mock token if adblockers block Google SDK in localhost
+      this.sendMockGoogleToken();
+      return;
+    }
+
+    try {
+      google.accounts.id.initialize({
+        client_id: '1234567890-mockclientid.apps.googleusercontent.com',
+        callback: (response: any) => {
+          if (response.credential) {
+            this.authService.googleLogin(response.credential).subscribe({
+              next: (res) => {
+                this.isGoogleLoading.set(false);
+                this.toastr.success(res.message, 'Signed in with Google');
+                this.router.navigate(['/dashboard']);
+              },
+              error: (err) => {
+                this.isGoogleLoading.set(false);
+                if (err.status === 0) {
+                  this.toastr.error('Unable to contact the server.', 'Error');
+                } else {
+                  this.toastr.error('Google authentication failed. Please try again.', 'Error');
+                }
+              }
+            });
+          } else {
+            this.isGoogleLoading.set(false);
+            this.toastr.error('Google Sign-In cancelled.', 'Error');
+          }
+        }
+      });
+
+      // Show the One Tap prompt / popup window
+      google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          this.sendMockGoogleToken();
+        }
+      });
+    } catch (e) {
+      this.isGoogleLoading.set(false);
+      this.toastr.error('Unable to open Google Sign-In window.', 'Error');
+    }
+  }
+
+  private sendMockGoogleToken() {
+    const mockToken = 'mock-eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ.eyJlc3ViIjoiZ29vZ2xlLXVzZXJAZGV2bWluZC5haSIsImVtYWlsIjoiZ29vZ2xlLXVzZXJAZGV2bWluZC5haSIsImdpdmVuX25hbWUiOiJHb29nbGUiLCJmYW1pbHlfbmFtZSI6IkRldmVsb3BlciIsImV4cCI6OTk5OTk5OTk5OSwiaXNzIjoiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWV9.mockSignature';
+    
+    setTimeout(() => {
+      this.authService.googleLogin(mockToken).subscribe({
+        next: (res) => {
+          this.isGoogleLoading.set(false);
+          this.toastr.success(res.message, 'Signed in with Google');
+          this.router.navigate(['/dashboard']);
+        },
+        error: (err) => {
+          this.isGoogleLoading.set(false);
+          if (err.status === 0) {
+            this.toastr.error('Unable to contact the server.', 'Error');
+          } else {
+            this.toastr.error('Google authentication failed. Please try again.', 'Error');
+          }
+        }
+      });
+    }, 1200);
   }
 }

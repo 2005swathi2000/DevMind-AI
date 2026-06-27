@@ -55,6 +55,9 @@ public class User extends BaseAuditEntity {
     @Column(name = "reset_password_token_expiry")
     private LocalDateTime resetPasswordTokenExpiry;
 
+    @Column(name = "gender")
+    private String gender;
+
     @Column(nullable = false)
     private boolean active = true;
 }

@@ -18,12 +18,14 @@ export interface JobResponse {
   completedAt: string;
 }
 
+import { getApiBaseUrl } from './api-config';
+
 @Injectable({
   providedIn: 'root'
 })
 export class JobsService {
   private http = inject(HttpClient);
-  private readonly API_URL = 'http://localhost:8080/api/jobs';
+  private readonly API_URL = `${getApiBaseUrl()}/api/jobs`;
 
   submitJob(payload: {
     code: string;

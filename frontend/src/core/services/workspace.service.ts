@@ -26,6 +26,8 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+import { getApiBaseUrl } from './api-config';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -33,7 +35,7 @@ export class WorkspaceService {
   private http = inject(HttpClient);
   private tokenService = inject(TokenService);
 
-  private readonly API_URL = 'http://localhost:8080/api/workspace';
+  private readonly API_URL = `${getApiBaseUrl()}/api/workspace`;
 
   getHistory(toolType?: string): Observable<ApiResponse<WorkspaceSessionResponse[]>> {
     const url = toolType ? `${this.API_URL}/history?toolType=${toolType}` : `${this.API_URL}/history`;

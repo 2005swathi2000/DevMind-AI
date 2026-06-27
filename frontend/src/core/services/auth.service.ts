@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { TokenService } from './token.service';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
+import { getApiBaseUrl } from './api-config';
 
 export interface User {
   email: string;
@@ -10,6 +11,7 @@ export interface User {
   lastName: string;
   role: string;
   profilePicture?: string;
+  gender?: string;
 }
 
 export interface AuthResponse {
@@ -20,6 +22,7 @@ export interface AuthResponse {
   lastName: string;
   role: string;
   profilePicture?: string;
+  gender?: string;
 }
 
 export interface ApiResponse<T> {
@@ -38,7 +41,7 @@ export class AuthService {
   private tokenService = inject(TokenService);
   private router = inject(Router);
 
-  private readonly API_URL = 'http://localhost:8080/api/auth';
+  private readonly API_URL = `${getApiBaseUrl()}/api/auth`;
 
   // Signals for application state
   currentUserSignal = signal<User | null>(null);
@@ -73,6 +76,9 @@ export class AuthService {
 
   register(payload: any): Observable<ApiResponse<AuthResponse>> {
     this.isLoadingSignal.set(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('devmind_remember_me', 'true');
+    }
     return this.http.post<ApiResponse<AuthResponse>>(`${this.API_URL}/register`, payload).pipe(
       tap(res => this.handleAuthSuccess(res.data)),
       catchError(err => {
@@ -84,6 +90,9 @@ export class AuthService {
 
   login(payload: any): Observable<ApiResponse<AuthResponse>> {
     this.isLoadingSignal.set(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('devmind_remember_me', payload.rememberMe ? 'true' : 'false');
+    }
     return this.http.post<ApiResponse<AuthResponse>>(`${this.API_URL}/login`, payload).pipe(
       tap(res => this.handleAuthSuccess(res.data)),
       catchError(err => {
@@ -95,6 +104,9 @@ export class AuthService {
 
   googleLogin(idToken: string): Observable<ApiResponse<AuthResponse>> {
     this.isLoadingSignal.set(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('devmind_remember_me', 'true');
+    }
     return this.http.post<ApiResponse<AuthResponse>>(`${this.API_URL}/google`, { idToken }).pipe(
       tap(res => this.handleAuthSuccess(res.data)),
       catchError(err => {
@@ -108,19 +120,38 @@ export class AuthService {
     const refreshToken = this.tokenService.getRefreshToken();
     if (refreshToken) {
       this.http.post(`${this.API_URL}/logout`, { refreshToken }).subscribe({
-        next: () => this.clearSession(),
-        error: () => this.clearSession()
+        next: () => this.clearSessionAndRedirectToLanding(),
+        error: () => this.clearSessionAndRedirectToLanding()
       });
     } else {
-      this.clearSession();
+      this.clearSessionAndRedirectToLanding();
     }
+  }
+
+  private clearSessionAndRedirectToLanding(): void {
+    this.tokenService.clearTokens();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('devmind_remember_me');
+    }
+    this.currentUserSignal.set(null);
+    this.isLoadingSignal.set(false);
+    this.router.navigate(['/']);
   }
 
   private clearSession(): void {
     this.tokenService.clearTokens();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('devmind_remember_me');
+    }
     this.currentUserSignal.set(null);
     this.isLoadingSignal.set(false);
-    this.router.navigate(['/login']);
+    
+    // Only redirect to Login if currently on a protected route
+    const currentUrl = this.router.url.split('?')[0];
+    const publicRoutes = ['/', '/login', '/register'];
+    if (!publicRoutes.includes(currentUrl)) {
+      this.router.navigate(['/login']);
+    }
   }
 
   refreshAccessToken(): Observable<ApiResponse<AuthResponse>> {
@@ -147,6 +178,26 @@ export class AuthService {
     return this.http.post<ApiResponse<void>>(`${this.API_URL}/password-reset/confirm`, payload);
   }
 
+  updateProfile(payload: { firstName?: string, lastName?: string, profilePicture?: string, gender?: string }): Observable<ApiResponse<any>> {
+    const baseUrl = this.API_URL.replace('/auth', '/users');
+    return this.http.put<ApiResponse<any>>(`${baseUrl}/profile`, payload).pipe(
+      tap(res => {
+        if (res.data) {
+          const current = this.currentUserSignal();
+          if (current) {
+            this.currentUserSignal.set({
+              ...current,
+              firstName: res.data.firstName || current.firstName,
+              lastName: res.data.lastName || current.lastName,
+              profilePicture: res.data.profilePicture || current.profilePicture,
+              gender: res.data.gender || current.gender
+            });
+          }
+        }
+      })
+    );
+  }
+
   private handleAuthSuccess(data: AuthResponse): void {
     this.tokenService.setAccessToken(data.accessToken);
     this.tokenService.setRefreshToken(data.refreshToken);
@@ -156,7 +207,8 @@ export class AuthService {
       firstName: data.firstName,
       lastName: data.lastName,
       role: data.role,
-      profilePicture: data.profilePicture
+      profilePicture: data.profilePicture,
+      gender: data.gender
     });
 
     this.isLoadingSignal.set(false);

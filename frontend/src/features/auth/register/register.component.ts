@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -69,11 +69,26 @@ import { ToastrService } from 'ngx-toastr';
             </div>
 
             <div>
+              <label for="gender" class="block text-xs font-semibold uppercase tracking-wider text-brand-textMuted">Gender</label>
+              <select id="gender" formControlName="gender"
+                      class="mt-1.5 w-full bg-brand-editorBg border border-brand-border rounded-xl px-4 py-2.5 text-brand-text focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition duration-200">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+
+            <div>
               <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-brand-textMuted">Password</label>
-              <input id="password" type="password" formControlName="password" required
-                     (input)="checkPasswordStrength()"
-                     class="mt-1.5 w-full bg-brand-editorBg border border-brand-border rounded-xl px-4 py-2.5 text-brand-text placeholder-brand-text/30 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition duration-200"
-                     placeholder="••••••••">
+              <div class="mt-1.5 relative">
+                <input id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password" required
+                       (input)="checkPasswordStrength()"
+                       class="w-full bg-brand-editorBg border border-brand-border rounded-xl pl-4 pr-12 py-2.5 text-brand-text placeholder-brand-text/30 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition duration-200"
+                       placeholder="••••••••">
+                <button type="button" (click)="togglePasswordVisibility()"
+                        class="absolute right-4 top-1/2 -translate-y-1/2 text-brand-textMuted hover:text-white transition duration-150 bg-transparent border-0 cursor-pointer select-none">
+                  {{ showPassword() ? '🙈' : '👁️' }}
+                </button>
+              </div>
               
               <!-- Password requirements checklist -->
               <div class="mt-3 space-y-1.5 text-[11px] text-brand-text bg-white/5 border border-brand-border rounded-xl p-3">
@@ -102,8 +117,13 @@ import { ToastrService } from 'ngx-toastr';
             </div>
 
             <button type="submit" [disabled]="registerForm.invalid || !isPasswordStrong() || isLoading()"
-                    class="btn-primary w-full mt-4 py-3 px-4 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition duration-200">
-              {{ isLoading() ? 'Creating account...' : 'Create Account' }}
+                    class="btn-primary w-full mt-4 py-3 px-4 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition duration-200 flex items-center justify-center gap-2">
+              @if (isLoading()) {
+                <span class="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
+                <span>Creating account...</span>
+              } @else {
+                <span>Create Account</span>
+              }
             </button>
           </form>
         </div>
@@ -118,12 +138,14 @@ export class RegisterComponent {
   private router = inject(Router);
 
   isLoading = this.authService.isLoadingSignal;
+  showPassword = signal<boolean>(false);
 
   registerForm: FormGroup = this.fb.group({
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required]]
+    password: ['', [Validators.required]],
+    gender: ['male']
   });
 
   checks = {
@@ -133,6 +155,10 @@ export class RegisterComponent {
     digit: false,
     special: false
   };
+
+  togglePasswordVisibility() {
+    this.showPassword.set(!this.showPassword());
+  }
 
   checkPasswordStrength() {
     const val = this.registerForm.value.password || '';

@@ -29,6 +29,21 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'profile',
+    loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'settings',
+    loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'project-review',
+    loadComponent: () => import('./features/project-review/project-review.component').then(m => m.ProjectReviewComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: '',
     loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent),
     pathMatch: 'full'

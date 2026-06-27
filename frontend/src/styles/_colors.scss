@@ -1,20 +1,20 @@
 :root {
-  --primary: #462C7D;
-  --primary-hover: #5A3C9A;
-  --secondary: #831C91;
-  --accent: #D552A3;
-  --highlight: #FF70BF;
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  --secondary: #7C3AED;
+  --accent: #06B6D4;
+  --highlight: #22D3EE;
   
-  --background: #120A24;
-  --surface: rgba(255, 255, 255, 0.05);
+  --background: #09090B;
+  --surface: #111827;
   --border: rgba(255, 255, 255, 0.08);
-  --text: #F5EFFF;
-  --text-muted: #D8C7EB;
+  --text: #F8FAFC;
+  --text-muted: #94A3B8;
 
   /* Monaco Editor dark theme colors */
-  --editor-bg: #1E1E2E;
-  --editor-line: #2E2E3E;
-  --editor-line-number: #6C529C;
+  --editor-bg: #111827;
+  --editor-line: #1F2937;
+  --editor-line-number: #4F46E5;
 
   /* Semantic Alerts */
   --success: #10B981;

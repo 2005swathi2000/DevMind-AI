@@ -25,4 +25,6 @@ public class RegisterRequest {
     @NotBlank(message = "Password is required")
     @ValidPassword
     private String password;
+
+    private String gender;
 }

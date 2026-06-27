@@ -2,15 +2,16 @@ import { Component, inject, OnInit, OnDestroy, signal, computed, ElementRef, Vie
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MonacoEditorModule } from 'ngx-monaco-editor-v2';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { JobsService, JobResponse } from '../../core/services/jobs.service';
 import { AuthService } from '../../core/services/auth.service';
+import { NavbarComponent } from '../../shared/components/navbar/navbar.component';
 
 @Component({
   selector: 'app-jobs',
   standalone: true,
-  imports: [CommonModule, FormsModule, MonacoEditorModule, RouterLink],
+  imports: [CommonModule, FormsModule, MonacoEditorModule, NavbarComponent],
   template: `
     <div class="flex flex-col h-screen bg-brand-bg text-brand-text font-sans overflow-hidden">
       <!-- Glow background accents -->
@@ -19,42 +20,8 @@ import { AuthService } from '../../core/services/auth.service';
         <div class="absolute -bottom-[40%] -right-[20%] w-[80%] h-[80%] rounded-full bg-brand-surface/20 blur-[120px]"></div>
       </div>
 
-      <!-- Navbar -->
-      <nav class="border-b border-brand-border bg-brand-bg/80 backdrop-blur-xl px-6 py-3.5 flex items-center justify-between z-10 shrink-0">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-secondary to-brand-highlight flex items-center justify-center font-bold text-white text-lg shadow-low transition duration-300 hover:scale-105">
-            D
-          </div>
-          <div>
-            <span class="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-brand-secondary to-brand-highlight tracking-wide text-base block font-title">
-              DEVMIND AI
-            </span>
-            <span class="text-[10px] block text-brand-textMuted font-semibold uppercase tracking-wider">Asynchronous Worker Console</span>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-6">
-          <a routerLink="/workspace" class="text-sm font-semibold text-brand-textMuted hover:text-brand-highlight transition duration-150">
-            Workspace
-          </a>
-          <a routerLink="/dashboard" class="text-sm font-semibold text-brand-textMuted hover:text-brand-highlight transition duration-150">
-            Dashboard
-          </a>
-          <div class="h-4 w-px bg-brand-border"></div>
-          @if (user(); as u) {
-            <div class="flex items-center gap-3">
-              @if (u.profilePicture) {
-                <img [src]="u.profilePicture" alt="Profile" class="w-7 h-7 rounded-full object-cover">
-              } @else {
-                <div class="w-7 h-7 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-brand-highlight text-xs font-semibold uppercase">
-                  {{ u.firstName.charAt(0) }}{{ u.lastName.charAt(0) }}
-                </div>
-              }
-              <span class="text-sm text-white font-bold hidden md:inline">{{ u.firstName }}</span>
-            </div>
-          }
-        </div>
-      </nav>
+      <!-- Shared Header Navbar -->
+      <app-navbar></app-navbar>
 
       <!-- Main Layout Grid -->
       <div class="flex-1 flex overflow-hidden z-10">
@@ -266,6 +233,7 @@ export class JobsComponent implements OnInit, OnDestroy {
   private jobsService = inject(JobsService);
   private authService = inject(AuthService);
   private toastr = inject(ToastrService);
+  private route = inject(ActivatedRoute);
 
   user = this.authService.currentUserSignal;
   jobsList = signal<JobResponse[]>([]);
@@ -294,6 +262,18 @@ export class JobsComponent implements OnInit, OnDestroy {
     this.pollIntervalId = setInterval(() => {
       this.loadJobs(false);
     }, 3000);
+
+    // Listen to query parameters to auto-select a job
+    this.route.queryParams.subscribe(params => {
+      if (params['jobId']) {
+        const jobId = params['jobId'];
+        this.activeJobId.set(jobId);
+        const match = this.jobsList().find(j => j.id === jobId);
+        if (match) {
+          this.selectedJob.set(match);
+        }
+      }
+    });
   }
 
   ngOnDestroy() {

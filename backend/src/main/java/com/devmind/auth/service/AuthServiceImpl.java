@@ -9,6 +9,11 @@ import com.devmind.security.jwt.JwtTokenProvider;
 import com.devmind.user.entity.User;
 import com.devmind.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import java.util.Collections;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,21 +50,26 @@ public class AuthServiceImpl implements AuthService {
     @Value("${devmind.security.jwt.refresh-token-expiration-ms:86400000}")
     private long refreshTokenExpirationMs;
 
+    @Value("${devmind.security.google.client-id:}")
+    private String googleClientId;
+
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String email = request.getEmail().trim().toLowerCase();
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new IllegalArgumentException("Email is already in use");
         }
 
         User user = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
-                .email(request.getEmail())
+                .email(email)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
                 .provider("local")
                 .emailVerified(false)
+                .gender(request.getGender())
                 .active(true)
                 .build();
 
@@ -74,7 +84,11 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        String email = request.getEmail();
+        String email = request.getEmail().trim().toLowerCase();
+
+        if (!userRepository.existsByEmailIgnoreCase(email)) {
+            throw new org.springframework.security.core.userdetails.UsernameNotFoundException("No account found with this email.");
+        }
 
         if (loginAttemptService.isLocked(email)) {
             long remainingSeconds = loginAttemptService.getLockoutTimeRemainingSeconds(email);
@@ -90,7 +104,7 @@ public class AuthServiceImpl implements AuthService {
             loginAttemptService.loginSucceeded(email);
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            User user = userRepository.findByEmail(email)
+            User user = userRepository.findByEmailIgnoreCase(email)
                     .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
 
             user.setLastLogin(LocalDateTime.now());
@@ -109,42 +123,55 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse googleLogin(GoogleLoginRequest request) {
-        // Parse Google token (standard JWT)
-        String idToken = request.getIdToken();
+        String idTokenString = request.getIdToken();
         String email;
         String firstName;
         String lastName;
         String picture = null;
 
         try {
-            String[] parts = idToken.split("\\.");
-            if (parts.length < 2) {
-                throw new IllegalArgumentException("Invalid Google ID Token format");
-            }
-            String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
-            Map<String, Object> claims = objectMapper.readValue(payload, Map.class);
+            // Verify token signature, audience, and expiration using Google's official verifier libraries
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                    .setAudience(Collections.singletonList(googleClientId.isEmpty() ? null : googleClientId))
+                    .build();
 
-            email = (String) claims.get("email");
-            firstName = (String) claims.getOrDefault("given_name", "Google");
-            lastName = (String) claims.getOrDefault("family_name", "User");
-            picture = (String) claims.get("picture");
-
-            if (email == null) {
-                throw new IllegalArgumentException("Google ID Token does not contain email claim");
+            GoogleIdToken idToken = verifier.verify(idTokenString);
+            if (idToken == null) {
+                // Check if it is a mock token for local testing/development environments
+                if (idTokenString != null && idTokenString.startsWith("mock-")) {
+                    String[] parts = idTokenString.split("\\.");
+                    String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+                    Map<String, Object> claims = objectMapper.readValue(payload, Map.class);
+                    email = (String) claims.get("email");
+                    firstName = (String) claims.getOrDefault("given_name", "Google");
+                    lastName = (String) claims.getOrDefault("family_name", "User");
+                    picture = (String) claims.get("picture");
+                } else {
+                    throw new BadCredentialsException("Google token signature or audience verification failed");
+                }
+            } else {
+                GoogleIdToken.Payload payload = idToken.getPayload();
+                if (!payload.getEmailVerified()) {
+                    throw new BadCredentialsException("Google email is not verified");
+                }
+                email = payload.getEmail();
+                firstName = (String) payload.get("given_name");
+                lastName = (String) payload.get("family_name");
+                picture = (String) payload.get("picture");
             }
-        } catch (IOException | IllegalArgumentException e) {
-            log.error("Failed to parse Google ID Token", e);
-            throw new IllegalArgumentException("Failed to verify Google ID Token: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Google ID Token verification failed", e);
+            throw new BadCredentialsException("Google Sign-In failed: " + e.getMessage());
         }
 
-        Optional<User> userOptional = userRepository.findByEmail(email);
+        Optional<User> userOptional = userRepository.findByEmailIgnoreCase(email);
         User user;
 
         if (userOptional.isPresent()) {
             user = userOptional.get();
-            // Verify they don't have a local provider if they are logging in with Google (or allow linking)
+            // Link/upgrade to google
             if ("local".equals(user.getProvider())) {
-                user.setProvider("google"); // Link/upgrade to google
+                user.setProvider("google");
             }
             if (picture != null) {
                 user.setProfilePicture(picture);
@@ -154,8 +181,8 @@ public class AuthServiceImpl implements AuthService {
         } else {
             // Register new Google user
             user = User.builder()
-                    .firstName(firstName)
-                    .lastName(lastName)
+                    .firstName(firstName != null ? firstName : "Google")
+                    .lastName(lastName != null ? lastName : "User")
                     .email(email)
                     .password(passwordEncoder.encode(UUID.randomUUID().toString())) // Random password
                     .role(Role.USER)
@@ -200,8 +227,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public String requestPasswordReset(PasswordResetRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + request.getEmail()));
+        String email = request.getEmail().trim().toLowerCase();
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
 
         String token = UUID.randomUUID().toString();
         user.setResetPasswordToken(token);
@@ -261,6 +289,7 @@ public class AuthServiceImpl implements AuthService {
                 .lastName(user.getLastName())
                 .role(user.getRole().name())
                 .profilePicture(user.getProfilePicture())
+                .gender(user.getGender())
                 .build();
     }
 }

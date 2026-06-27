@@ -13,12 +13,14 @@ export interface AnalyticsSummaryResponse {
   requestsByToolType: { [key: string]: number };
 }
 
+import { getApiBaseUrl } from './api-config';
+
 @Injectable({
   providedIn: 'root'
 })
 export class AnalyticsService {
   private http = inject(HttpClient);
-  private readonly API_URL = 'http://localhost:8080/api/analytics';
+  private readonly API_URL = `${getApiBaseUrl()}/api/analytics`;
 
   getSummary(): Observable<ApiResponse<AnalyticsSummaryResponse>> {
     return this.http.get<ApiResponse<AnalyticsSummaryResponse>>(`${this.API_URL}/summary`);
