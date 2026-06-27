@@ -74,6 +74,10 @@ export class AuthService {
     }
   }
 
+  getGoogleClientId(): Observable<ApiResponse<string>> {
+    return this.http.get<ApiResponse<string>>(`${this.API_URL}/config/google`);
+  }
+
   register(payload: any): Observable<ApiResponse<AuthResponse>> {
     this.isLoadingSignal.set(true);
     if (typeof window !== 'undefined') {

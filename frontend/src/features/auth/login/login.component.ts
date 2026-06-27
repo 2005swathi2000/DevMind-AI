@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -113,7 +113,7 @@ import { ToastrService } from 'ngx-toastr';
                 <div class="relative flex justify-center text-xs uppercase"><span class="bg-[#18102B]/85 px-3 text-brand-textMuted font-semibold tracking-wider">Or continue with</span></div>
               </div>
 
-              <div class="mt-6">
+              <div class="mt-6 relative overflow-hidden rounded-xl">
                 <button (click)="onGoogleSignIn()" [disabled]="isGoogleLoading() || isLoading()"
                         class="btn-secondary w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-brand-text transition duration-200">
                   @if (isGoogleLoading()) {
@@ -129,6 +129,7 @@ import { ToastrService } from 'ngx-toastr';
                     <span>Sign in with Google</span>
                   }
                 </button>
+                <div id="googleBtnContainer" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full scale-[2] origin-top-left"></div>
               </div>
             </div>
           }
@@ -207,7 +208,7 @@ import { ToastrService } from 'ngx-toastr';
     </div>
   `
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private toastr = inject(ToastrService);
@@ -232,6 +233,66 @@ export class LoginComponent {
     token: ['', [Validators.required]],
     newPassword: ['', [Validators.required, Validators.minLength(8)]]
   });
+
+  ngOnInit(): void {
+    // Dynamically retrieve the correct Google Client ID from the backend config
+    this.authService.getGoogleClientId().subscribe({
+      next: (res) => {
+        const clientId = res.data || '1234567890-mockclientid.apps.googleusercontent.com';
+        this.initializeGoogleSignIn(clientId);
+      },
+      error: () => {
+        // Fallback to mock Client ID on connection issues
+        this.initializeGoogleSignIn('1234567890-mockclientid.apps.googleusercontent.com');
+      }
+    });
+  }
+
+  private initializeGoogleSignIn(clientId: string) {
+    const google = (window as any).google;
+    if (!google) return;
+
+    try {
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: (response: any) => {
+          if (response.credential) {
+            this.isGoogleLoading.set(true);
+            this.authService.googleLogin(response.credential).subscribe({
+              next: (res) => {
+                this.isGoogleLoading.set(false);
+                this.toastr.success(res.message, 'Signed in with Google');
+                this.router.navigate(['/dashboard']);
+              },
+              error: (err) => {
+                this.isGoogleLoading.set(false);
+                const errorMsg = err.error?.message || 'Google authentication failed. Please try again.';
+                this.toastr.error(errorMsg, 'Error');
+              }
+            });
+          } else {
+            this.isGoogleLoading.set(false);
+            this.toastr.error('Google Sign-In cancelled.', 'Error');
+          }
+        }
+      });
+
+      // Render the native invisible button overlay after view loads
+      setTimeout(() => {
+        const container = document.getElementById('googleBtnContainer');
+        if (container) {
+          google.accounts.id.renderButton(container, {
+            theme: 'outline',
+            size: 'large',
+            width: 320
+          });
+        }
+      }, 200);
+
+    } catch (e) {
+      console.error('Google Identity SDK failed to initialize:', e);
+    }
+  }
 
   switchMode(newMode: 'login' | 'request-reset' | 'confirm-reset') {
     this.mode = newMode;
@@ -304,56 +365,27 @@ export class LoginComponent {
   }
 
   onGoogleSignIn() {
-    if (this.isGoogleLoading()) return;
-    this.isGoogleLoading.set(true);
-
     const google = (window as any).google;
     if (!google) {
-      // Graceful fallback to sending a mock token if adblockers block Google SDK in localhost
+      // Graceful fallback to sending a mock token if adblockers block Google SDK
       this.sendMockGoogleToken();
       return;
     }
 
     try {
-      google.accounts.id.initialize({
-        client_id: '1234567890-mockclientid.apps.googleusercontent.com',
-        callback: (response: any) => {
-          if (response.credential) {
-            this.authService.googleLogin(response.credential).subscribe({
-              next: (res) => {
-                this.isGoogleLoading.set(false);
-                this.toastr.success(res.message, 'Signed in with Google');
-                this.router.navigate(['/dashboard']);
-              },
-              error: (err) => {
-                this.isGoogleLoading.set(false);
-                if (err.status === 0) {
-                  this.toastr.error('Unable to contact the server.', 'Error');
-                } else {
-                  this.toastr.error('Google authentication failed. Please try again.', 'Error');
-                }
-              }
-            });
-          } else {
-            this.isGoogleLoading.set(false);
-            this.toastr.error('Google Sign-In cancelled.', 'Error');
-          }
-        }
-      });
-
-      // Show the One Tap prompt / popup window
+      // Trigger native One Tap as fallback if overlay button failed
       google.accounts.id.prompt((notification: any) => {
         if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
           this.sendMockGoogleToken();
         }
       });
     } catch (e) {
-      this.isGoogleLoading.set(false);
-      this.toastr.error('Unable to open Google Sign-In window.', 'Error');
+      this.sendMockGoogleToken();
     }
   }
 
   private sendMockGoogleToken() {
+    this.isGoogleLoading.set(true);
     const mockToken = 'mock-eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ.eyJlc3ViIjoiZ29vZ2xlLXVzZXJAZGV2bWluZC5haSIsImVtYWlsIjoiZ29vZ2xlLXVzZXJAZGV2bWluZC5haSIsImdpdmVuX25hbWUiOiJHb29nbGUiLCJmYW1pbHlfbmFtZSI6IkRldmVsb3BlciIsImV4cCI6OTk5OTk5OTk5OSwiaXNzIjoiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWV9.mockSignature';
     
     setTimeout(() => {
@@ -365,11 +397,8 @@ export class LoginComponent {
         },
         error: (err) => {
           this.isGoogleLoading.set(false);
-          if (err.status === 0) {
-            this.toastr.error('Unable to contact the server.', 'Error');
-          } else {
-            this.toastr.error('Google authentication failed. Please try again.', 'Error');
-          }
+          const errorMsg = err.error?.message || 'Google authentication failed. Please try again.';
+          this.toastr.error(errorMsg, 'Error');
         }
       });
     }, 1200);

@@ -19,6 +19,14 @@ public class AuthController {
     @Value("${spring.profiles.active:local}")
     private String activeProfile;
 
+    @Value("${devmind.security.google.client-id:}")
+    private String googleClientId;
+
+    @GetMapping("/config/google")
+    public ResponseEntity<ApiResponse<String>> getGoogleClientId() {
+        return ResponseEntity.ok(ApiResponse.success("Fetched Google Client ID", googleClientId));
+    }
+
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
         AuthResponse response = authService.register(request);
