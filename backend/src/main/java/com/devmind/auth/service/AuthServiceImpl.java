@@ -56,16 +56,23 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request) {
+        log.info("[Register Step 1] Registration request received for email: {}", request.getEmail());
+        
         String email = request.getEmail().trim().toLowerCase();
+        log.info("[Register Step 2] Performing validation: Checking if email already exists...");
         if (userRepository.existsByEmailIgnoreCase(email)) {
+            log.error("[Register Error] Email is already in use: {}", email);
             throw new IllegalArgumentException("Email is already in use");
         }
 
+        log.info("[Register Step 3] Performing password encoding...");
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
+        
         User user = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .email(email)
-                .password(passwordEncoder.encode(request.getPassword()))
+                .password(encodedPassword)
                 .role(Role.USER)
                 .provider("local")
                 .emailVerified(false)
@@ -73,11 +80,17 @@ public class AuthServiceImpl implements AuthService {
                 .active(true)
                 .build();
 
+        log.info("[Register Step 4] Saving user entity to PostgreSQL database...");
         User savedUser = userRepository.save(user);
+        log.info("[Register Step 5] User saved successfully. ID: {}, Email: {}", savedUser.getId(), savedUser.getEmail());
 
+        log.info("[Register Step 6] Generating JWT security access token...");
         String accessToken = jwtTokenProvider.generateAccessToken(savedUser.getEmail());
+        
+        log.info("[Register Step 7] Generating and saving refresh token...");
         String refreshToken = createAndSaveRefreshToken(savedUser);
 
+        log.info("[Register Step 8] Returning successfully compiled AuthResponse!");
         return buildAuthResponse(savedUser, accessToken, refreshToken);
     }
 

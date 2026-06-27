@@ -182,8 +182,15 @@ export class RegisterComponent {
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
-        const errorMsg = err.error?.message || 'Registration failed. Try checking your parameters.';
-        this.toastr.error(errorMsg, 'Error');
+        let errorMsg = 'Registration failed. Try checking your parameters.';
+        if (err.status === 0) {
+          errorMsg = 'Cannot connect to the backend server. Please check your internet connection or verify if the backend is running and CORS allows this domain.';
+        } else if (err.error?.message) {
+          errorMsg = err.error.message;
+        } else if (err.message) {
+          errorMsg = err.message;
+        }
+        this.toastr.error(errorMsg, 'Registration Error');
       }
     });
   }
