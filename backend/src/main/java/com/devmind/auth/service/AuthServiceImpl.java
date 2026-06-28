@@ -85,7 +85,12 @@ public class AuthServiceImpl implements AuthService {
         log.info("[Register Step 5] User saved successfully. ID: {}, Email: {}", savedUser.getId(), savedUser.getEmail());
 
         log.info("[Register Step 6] Generating JWT security access token...");
-        String accessToken = jwtTokenProvider.generateAccessToken(savedUser.getEmail());
+        java.util.Map<String, Object> claims = java.util.Map.of(
+            "firstName", savedUser.getFirstName(),
+            "lastName", savedUser.getLastName(),
+            "role", savedUser.getRole().name()
+        );
+        String accessToken = jwtTokenProvider.generateAccessToken(savedUser.getEmail(), claims);
         
         log.info("[Register Step 7] Generating and saving refresh token...");
         String refreshToken = createAndSaveRefreshToken(savedUser);
@@ -123,7 +128,12 @@ public class AuthServiceImpl implements AuthService {
             user.setLastLogin(LocalDateTime.now());
             userRepository.save(user);
 
-            String accessToken = jwtTokenProvider.generateAccessToken(email);
+            java.util.Map<String, Object> claims = java.util.Map.of(
+                "firstName", user.getFirstName(),
+                "lastName", user.getLastName(),
+                "role", user.getRole().name()
+            );
+            String accessToken = jwtTokenProvider.generateAccessToken(email, claims);
             String refreshToken = rotateRefreshToken(user);
 
             return buildAuthResponse(user, accessToken, refreshToken);
@@ -208,7 +218,12 @@ public class AuthServiceImpl implements AuthService {
         }
 
         log.info("[Google Auth] Generating application JWT access token...");
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getEmail());
+        java.util.Map<String, Object> claims = java.util.Map.of(
+            "firstName", user.getFirstName(),
+            "lastName", user.getLastName(),
+            "role", user.getRole().name()
+        );
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getEmail(), claims);
         log.info("[Google Auth] Generating application JWT refresh token...");
         String refreshToken = rotateRefreshToken(user);
 
@@ -225,7 +240,12 @@ public class AuthServiceImpl implements AuthService {
                 .map(this::verifyExpiration)
                 .map(RefreshToken::getUser)
                 .map(user -> {
-                    String accessToken = jwtTokenProvider.generateAccessToken(user.getEmail());
+                    java.util.Map<String, Object> claims = java.util.Map.of(
+                        "firstName", user.getFirstName(),
+                        "lastName", user.getLastName(),
+                        "role", user.getRole().name()
+                    );
+                    String accessToken = jwtTokenProvider.generateAccessToken(user.getEmail(), claims);
                     String newRefreshToken = rotateRefreshToken(user);
                     return buildAuthResponse(user, accessToken, newRefreshToken);
                 })

@@ -47,10 +47,15 @@ public class JwtTokenProvider {
     }
 
     public String generateAccessToken(String username) {
+        return generateAccessToken(username, java.util.Map.of());
+    }
+
+    public String generateAccessToken(String username, java.util.Map<String, Object> claims) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenExpirationMs);
 
         return Jwts.builder()
+                .claims(claims)
                 .subject(username)
                 .issuedAt(now)
                 .expiration(expiryDate)
