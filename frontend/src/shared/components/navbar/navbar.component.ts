@@ -66,10 +66,11 @@ import { ToastrService } from 'ngx-toastr';
 
             <!-- Premium Notion/GitHub inspired Profile Menu -->
             @if (showProfileMenu()) {
-              <div class="absolute right-0 mt-2.5 w-76 bg-brand-surface border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 p-3.5 backdrop-blur-md origin-top-right transform transition scale-100 ease-out animate-fade-in text-brand-text font-sans">
+              <div (click)="$event.stopPropagation()"
+                   class="absolute right-0 mt-2.5 w-76 bg-brand-surface border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 p-3.5 backdrop-blur-md origin-top-right transform transition scale-100 ease-out animate-fade-in text-brand-text font-sans">
                 
-                <!-- Profile Header -->
-                <div class="flex items-center gap-3.5 pb-3.5 border-b border-white/5">
+                <!-- Profile Header (Clickable link to profile page) -->
+                <div (click)="navTo('/profile')" class="flex items-center gap-3.5 pb-3.5 border-b border-white/5 cursor-pointer hover:opacity-90">
                   <!-- Avatar Circle with Glowing Online status -->
                   <div class="relative w-14 h-14 rounded-full overflow-hidden bg-brand-bg/50 border border-brand-highlight flex items-center justify-center shrink-0">
                     <img [src]="getDefaultAvatar()" class="w-full h-full object-cover">
@@ -117,6 +118,19 @@ import { ToastrService } from 'ngx-toastr';
 
                 <!-- Navigation List -->
                 <div class="py-2.5 space-y-1 border-b border-white/5">
+                  <button (click)="navTo('/profile')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition group text-left">
+                    <div class="flex items-center gap-3">
+                      <div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                        👤
+                      </div>
+                      <div>
+                        <span class="text-xs font-bold text-white block">Developer Profile</span>
+                        <span class="text-[9px] text-brand-textMuted/60 block">View Achievements & Stats</span>
+                      </div>
+                    </div>
+                    <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
+                  </button>
+
                   <button (click)="navTo('/dashboard')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition group text-left">
                     <div class="flex items-center gap-3">
                       <div class="w-7 h-7 rounded-lg bg-[#4F46E5]/10 border border-[#4F46E5]/20 flex items-center justify-center text-brand-primary">
@@ -540,6 +554,7 @@ export class NavbarComponent implements OnInit {
   }
 
   navTo(route: string): void {
+    this.showProfileMenu.set(false);
     this.router.navigate([route]);
   }
 
