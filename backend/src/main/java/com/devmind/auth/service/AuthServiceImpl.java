@@ -137,54 +137,52 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponse googleLogin(GoogleLoginRequest request) {
         String idTokenString = request.getIdToken();
+        log.info("[Google Auth] Google credential received");
+
         String email;
         String firstName;
         String lastName;
         String picture = null;
 
         try {
-            // Verify token signature, audience, and expiration using Google's official verifier libraries
+            log.info("[Google Auth] Initializing Google token verification...");
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
                     .setAudience(Collections.singletonList(googleClientId.isEmpty() ? null : googleClientId))
                     .build();
 
             GoogleIdToken idToken = verifier.verify(idTokenString);
             if (idToken == null) {
-                // Check if it is a mock token for local testing/development environments
-                if (idTokenString != null && idTokenString.startsWith("mock-")) {
-                    String[] parts = idTokenString.split("\\.");
-                    String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
-                    Map<String, Object> claims = objectMapper.readValue(payload, Map.class);
-                    email = (String) claims.get("email");
-                    firstName = (String) claims.getOrDefault("given_name", "Google");
-                    lastName = (String) claims.getOrDefault("family_name", "User");
-                    picture = (String) claims.get("picture");
-                } else {
-                    throw new BadCredentialsException("Google token signature or audience verification failed");
-                }
-            } else {
-                GoogleIdToken.Payload payload = idToken.getPayload();
-                if (!payload.getEmailVerified()) {
-                    throw new BadCredentialsException("Google email is not verified");
-                }
-                email = payload.getEmail();
-                firstName = (String) payload.get("given_name");
-                lastName = (String) payload.get("family_name");
-                picture = (String) payload.get("picture");
+                log.error("[Google Auth] Token verification failed: GoogleIdToken is null (invalid signature or audience)");
+                throw new BadCredentialsException("Google token signature or audience verification failed");
             }
+
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            if (!payload.getEmailVerified()) {
+                log.error("[Google Auth] Token verification failed: Email is not verified by Google");
+                throw new BadCredentialsException("Google email is not verified");
+            }
+
+            email = payload.getEmail();
+            firstName = (String) payload.get("given_name");
+            lastName = (String) payload.get("family_name");
+            picture = (String) payload.get("picture");
+            log.info("[Google Auth] Token verification successful for email: {}", email);
+
         } catch (Exception e) {
-            log.error("Google ID Token verification failed", e);
+            log.error("[Google Auth] Google ID Token verification failed with exception", e);
             throw new BadCredentialsException("Google Sign-In failed: " + e.getMessage());
         }
 
+        log.info("[Google Auth] Performing user lookup for email: {}", email);
         Optional<User> userOptional = userRepository.findByEmailIgnoreCase(email);
         User user;
 
         if (userOptional.isPresent()) {
             user = userOptional.get();
-            // Link/upgrade to google
+            log.info("[Google Auth] Existing user found. Provider: {}", user.getProvider());
             if ("local".equals(user.getProvider())) {
                 user.setProvider("google");
+                log.info("[Google Auth] Upgraded local user account provider to Google");
             }
             if (picture != null) {
                 user.setProfilePicture(picture);
@@ -192,12 +190,12 @@ public class AuthServiceImpl implements AuthService {
             user.setLastLogin(LocalDateTime.now());
             user = userRepository.save(user);
         } else {
-            // Register new Google user
+            log.info("[Google Auth] User not found. Creating new user account...");
             user = User.builder()
                     .firstName(firstName != null ? firstName : "Google")
                     .lastName(lastName != null ? lastName : "User")
                     .email(email)
-                    .password(passwordEncoder.encode(UUID.randomUUID().toString())) // Random password
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString())) // Random secure password
                     .role(Role.USER)
                     .provider("google")
                     .profilePicture(picture)
@@ -206,11 +204,15 @@ public class AuthServiceImpl implements AuthService {
                     .lastLogin(LocalDateTime.now())
                     .build();
             user = userRepository.save(user);
+            log.info("[Google Auth] New user registered successfully. User ID: {}", user.getId());
         }
 
+        log.info("[Google Auth] Generating application JWT access token...");
         String accessToken = jwtTokenProvider.generateAccessToken(user.getEmail());
+        log.info("[Google Auth] Generating application JWT refresh token...");
         String refreshToken = rotateRefreshToken(user);
 
+        log.info("[Google Auth] Compilation of AuthResponse complete. Returning response to controller.");
         return buildAuthResponse(user, accessToken, refreshToken);
     }
 
@@ -281,13 +283,17 @@ public class AuthServiceImpl implements AuthService {
 
     private String rotateRefreshToken(User user) {
         // Delete old token if exists
-        refreshTokenRepository.findByUser(user).ifPresent(refreshTokenRepository::delete);
+        refreshTokenRepository.findByUser(user).ifPresent(token -> {
+            refreshTokenRepository.delete(token);
+            refreshTokenRepository.flush(); // Force immediate database deletion to prevent unique constraint violation during insert
+        });
         return createAndSaveRefreshToken(user);
     }
 
     private RefreshToken verifyExpiration(RefreshToken token) {
         if (token.getExpiryDate().isBefore(LocalDateTime.now())) {
             refreshTokenRepository.delete(token);
+            refreshTokenRepository.flush(); // Force immediate database deletion
             throw new TokenRefreshException(token.getToken(), "Refresh token was expired. Please make a new signin request");
         }
         return token;

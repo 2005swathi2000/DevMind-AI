@@ -107,14 +107,12 @@ export class AuthService {
   }
 
   googleLogin(idToken: string): Observable<ApiResponse<AuthResponse>> {
-    this.isLoadingSignal.set(true);
     if (typeof window !== 'undefined') {
       localStorage.setItem('devmind_remember_me', 'true');
     }
     return this.http.post<ApiResponse<AuthResponse>>(`${this.API_URL}/google`, { idToken }).pipe(
       tap(res => this.handleAuthSuccess(res.data)),
       catchError(err => {
-        this.isLoadingSignal.set(false);
         return throwError(() => err);
       })
     );

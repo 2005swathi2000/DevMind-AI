@@ -2,6 +2,7 @@ import { Component, OnInit, signal, HostListener, ViewChild, ElementRef, AfterVi
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { getApiBaseUrl } from '../../core/services/api-config';
 
 interface FAQItem {
   question: string;
@@ -774,23 +775,59 @@ export class LandingComponent implements OnInit, AfterViewChecked {
       text: m.text
     }));
 
-    try {
-      const response = await fetch('http://localhost:8080/api/auth/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: text,
-          history: historyPayload,
-          provider: 'gemini'
-        })
-      });
+    const maxAttempts = 3;
+    let attempt = 0;
+    let response: Response | null = null;
+    let lastError: any = null;
 
-      if (!response.ok) {
-        throw new Error(`Support chat request failed with status: ${response.status}`);
+    while (attempt < maxAttempts) {
+      attempt++;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+
+        response = await fetch(`${getApiBaseUrl()}/api/auth/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: text,
+            history: historyPayload,
+            provider: 'gemini'
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`Server returned status: ${response.status}`);
+        }
+
+        // Request succeeded, break the retry loop
+        break;
+      } catch (e: any) {
+        lastError = e;
+        console.warn(`Chatbot connection attempt ${attempt} failed:`, e);
+        if (attempt < maxAttempts) {
+          // Wait 1 second before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
+    }
 
+    if (!response || !response.ok) {
+      console.error('All chatbot connection attempts failed.', lastError);
+      this.isSupportTyping.set(false);
+      this.supportMessages.update(msgs => [
+        ...msgs, 
+        { sender: 'bot', text: 'I am experiencing connection issues. Please check your network and try again.' }
+      ]);
+      return;
+    }
+
+    try {
       const reader = response.body?.getReader();
       if (!reader) {
         throw new Error('ReadableStream not supported by response body');
@@ -836,7 +873,7 @@ export class LandingComponent implements OnInit, AfterViewChecked {
     } catch (e: any) {
       console.error(e);
       this.isSupportTyping.set(false);
-      this.supportMessages.update(msgs => [...msgs, { sender: 'bot', text: 'Connection error. Please verify the backend is running and try again.' }]);
+      this.supportMessages.update(msgs => [...msgs, { sender: 'bot', text: 'Connection interrupted. Please try again.' }]);
     }
   }
 
