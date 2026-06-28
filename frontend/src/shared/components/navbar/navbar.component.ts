@@ -61,19 +61,32 @@ import { ToastrService } from 'ngx-toastr';
           <div class="relative">
             <button (click)="toggleProfileMenu($event)"
                     class="w-9 h-9 rounded-xl overflow-hidden bg-brand-surface border border-white/10 flex items-center justify-center hover:border-brand-highlight transition duration-150 scale-100 active:scale-95 duration-100">
-              <img [src]="getDefaultAvatar()" alt="Profile" class="w-full h-full object-cover">
+              @if (!avatarError()) {
+                <img [src]="getDefaultAvatar()" (error)="avatarError.set(true)" alt="Profile" class="w-full h-full object-cover">
+              } @else {
+                <span class="text-xs font-black text-brand-highlight uppercase">{{ u.firstName.charAt(0) }}{{ u.lastName ? u.lastName.charAt(0) : '' }}</span>
+              }
             </button>
+
+            <!-- Backdrop on mobile to focus the card -->
+            @if (showProfileMenu()) {
+              <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden" (click)="showProfileMenu.set(false)"></div>
+            }
 
             <!-- Premium Notion/GitHub inspired Profile Menu -->
             @if (showProfileMenu()) {
               <div (click)="$event.stopPropagation()"
-                   class="absolute right-0 mt-2.5 w-76 bg-brand-surface border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 p-3.5 backdrop-blur-md origin-top-right transform transition scale-100 ease-out animate-fade-in text-brand-text font-sans">
+                   class="fixed md:absolute inset-x-4 md:inset-x-auto top-24 md:top-full md:right-0 mt-0 md:mt-2.5 mx-auto md:mx-0 w-auto max-w-[328px] md:w-76 bg-brand-surface border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 p-3.5 backdrop-blur-md origin-top-right transform transition scale-100 ease-out animate-fade-in text-brand-text font-sans">
                 
                 <!-- Profile Header (Clickable link to profile page) -->
                 <div (click)="navTo('/profile')" class="flex items-center gap-3.5 pb-3.5 border-b border-white/5 cursor-pointer hover:opacity-90">
                   <!-- Avatar Circle with Glowing Online status -->
                   <div class="relative w-14 h-14 rounded-full overflow-hidden bg-brand-bg/50 border border-brand-highlight flex items-center justify-center shrink-0">
-                    <img [src]="getDefaultAvatar()" class="w-full h-full object-cover">
+                    @if (!avatarError()) {
+                      <img [src]="getDefaultAvatar()" (error)="avatarError.set(true)" class="w-full h-full object-cover">
+                    } @else {
+                      <span class="text-base font-black text-brand-highlight uppercase">{{ u.firstName.charAt(0) }}{{ u.lastName ? u.lastName.charAt(0) : '' }}</span>
+                    }
                     <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-brand-surface"></span>
                   </div>
                   
@@ -352,6 +365,7 @@ export class NavbarComponent implements OnInit {
   private router = inject(Router);
 
   user = this.authService.currentUserSignal;
+  avatarError = signal<boolean>(false);
 
   showProfileMenu = signal<boolean>(false);
   showShortcutModal = signal<boolean>(false);
