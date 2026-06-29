@@ -51,7 +51,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                     true, true, null);
 
             try {
-                emitter.send(SseEmitter.event().data(cachedSession.getAiResponse()));
+                String b64 = java.util.Base64.getEncoder().encodeToString(
+                        cachedSession.getAiResponse().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                emitter.send(SseEmitter.event().data(b64));
                 emitter.complete();
             } catch (Exception e) {
                 log.error("Failed to emit cached response", e);
@@ -69,7 +71,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             @Override
             public void onChunk(String chunk) throws Exception {
                 responseBuilder.append(chunk);
-                emitter.send(SseEmitter.event().data(chunk));
+                String b64 = java.util.Base64.getEncoder().encodeToString(
+                        chunk.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                emitter.send(SseEmitter.event().data(b64));
             }
 
             @Override

@@ -1,6 +1,6 @@
-import { Component, inject, OnInit, signal, HostListener } from '@angular/core';
+import { Component, inject, OnInit, signal, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { CommandPaletteService } from '../../../core/services/command-palette.service';
 import { AnalyticsService } from '../../../core/services/analytics.service';
@@ -9,7 +9,7 @@ import { ToastrService } from 'ngx-toastr';
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   template: `
     <nav class="border-b border-brand-border bg-brand-bg/85 backdrop-blur-xl px-4 sm:px-6 py-3 flex items-center justify-between top-0 z-50 shrink-0 select-none">
       <!-- Left: Logo & Mobile Hamburger Menu -->
@@ -19,14 +19,16 @@ import { ToastrService } from 'ngx-toastr';
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <a routerLink="/dashboard" class="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-secondary to-brand-highlight flex items-center justify-center font-black text-white text-base shadow-low hover:scale-105 transition duration-300">
-          D
-        </a>
-        <div class="hidden sm:block">
-          <span class="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-brand-secondary to-brand-highlight tracking-wide text-sm block font-title">
-            DEVMIND AI
-          </span>
-          <span class="text-[9px] block text-brand-textMuted/60 font-semibold uppercase tracking-wider">AI Developer Platform</span>
+        <div (click)="onLogoClick($event)" class="flex items-center gap-3 cursor-pointer group">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-secondary to-brand-highlight flex items-center justify-center font-black text-white text-base shadow-low group-hover:scale-105 transition duration-300">
+            D
+          </div>
+          <div class="hidden sm:block">
+            <span class="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-brand-secondary to-brand-highlight tracking-wide text-sm block font-title">
+              DEVMIND AI
+            </span>
+            <span class="text-[9px] block text-brand-textMuted/60 font-semibold uppercase tracking-wider">AI Developer Platform</span>
+          </div>
         </div>
       </div>
 
@@ -68,247 +70,210 @@ import { ToastrService } from 'ngx-toastr';
               }
             </button>
 
-            <!-- Backdrop on mobile to focus the card -->
+            <!-- Redesigned Centered Profile Modal -->
             @if (showProfileMenu()) {
-              <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden" (click)="showProfileMenu.set(false)"></div>
-            }
-
-            <!-- Premium Notion/GitHub inspired Profile Menu -->
-            @if (showProfileMenu()) {
-              <div (click)="$event.stopPropagation()"
-                   class="fixed md:absolute inset-x-4 md:inset-x-auto top-24 md:top-full md:right-0 mt-0 md:mt-2.5 mx-auto md:mx-0 w-auto max-w-[328px] md:w-76 bg-brand-surface border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 p-3.5 backdrop-blur-md origin-top-right transform transition scale-100 ease-out animate-fade-in text-brand-text font-sans">
+              <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <!-- Dark backdrop overlay with blur -->
+                <div class="absolute inset-0 bg-black/75 backdrop-blur-md" (click)="showProfileMenu.set(false)"></div>
                 
-                <!-- Profile Header (Clickable link to profile page) -->
-                <div (click)="navTo('/profile')" class="flex items-center gap-3.5 pb-3.5 border-b border-white/5 cursor-pointer hover:opacity-90">
-                  <!-- Avatar Circle with Glowing Online status -->
-                  <div class="relative w-14 h-14 rounded-full overflow-hidden bg-brand-bg/50 border border-brand-highlight flex items-center justify-center shrink-0">
-                    @if (!avatarError()) {
-                      <img [src]="getDefaultAvatar()" (error)="avatarError.set(true)" class="w-full h-full object-cover">
-                    } @else {
-                      <span class="text-base font-black text-brand-highlight uppercase">{{ u.firstName.charAt(0) }}{{ u.lastName ? u.lastName.charAt(0) : '' }}</span>
-                    }
-                    <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-brand-surface"></span>
-                  </div>
+                <!-- Centered Modal Box with elastic scale-up -->
+                <div (click)="$event.stopPropagation()"
+                     class="relative w-full max-w-md bg-brand-surface border border-white/10 rounded-2xl shadow-2xl p-6 animate-scale-up max-h-[90vh] overflow-y-auto no-scrollbar text-brand-text font-sans z-10">
                   
-                  <div class="min-w-0 flex-1">
-                    <h3 class="text-sm font-extrabold text-white flex items-center gap-1 truncate">
-                      {{ u.firstName }}
-                      <span class="text-brand-accent text-xs">✦</span>
-                    </h3>
-                    <p class="text-[10px] font-semibold text-brand-textMuted/65 truncate uppercase mt-0.5">{{ u.email }}</p>
+                  <!-- Close Button (✕) -->
+                  <button (click)="showProfileMenu.set(false)"
+                          class="absolute top-4 right-4 text-brand-textMuted hover:text-white transition font-bold select-none p-1 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10">
+                    ✕
+                  </button>
+                  
+                  <!-- Profile Header -->
+                  <div class="flex flex-col items-center text-center pb-5 border-b border-white/5">
+                    <!-- Glow Avatar Circle -->
+                    <div class="relative w-18 h-18 rounded-full overflow-hidden bg-brand-bg/50 border border-brand-highlight flex items-center justify-center shrink-0 mb-3 shadow-medium">
+                      @if (!avatarError()) {
+                        <img [src]="getDefaultAvatar()" (error)="avatarError.set(true)" class="w-full h-full object-cover">
+                      } @else {
+                        <span class="text-xl font-black text-brand-highlight uppercase">{{ u.firstName.charAt(0) }}{{ u.lastName ? u.lastName.charAt(0) : '' }}</span>
+                      }
+                      <span class="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-brand-surface"></span>
+                    </div>
                     
-                    <div class="flex items-center gap-2 mt-2">
-                      <span class="text-[8px] font-bold text-brand-highlight bg-brand-highlight/10 px-1.5 py-0.5 rounded border border-brand-highlight/20 uppercase tracking-wide">
-                        🚀 {{ getLevelTitle() }}
-                      </span>
-                      <span class="text-[8px] font-bold text-brand-accent bg-brand-accent/10 px-1.5 py-0.5 rounded border border-brand-accent/20 uppercase tracking-wide">
-                        PRO PLAN
-                      </span>
+                    <div class="min-w-0">
+                      <h3 class="text-base font-extrabold text-white flex items-center gap-1.5 justify-center">
+                        {{ u.firstName }} {{ u.lastName || '' }}
+                        <span class="text-brand-accent text-xs">✦</span>
+                      </h3>
+                      <p class="text-[10px] font-semibold text-brand-textMuted/65 uppercase tracking-wider mt-0.5 select-all">{{ u.email }}</p>
+                      
+                      <div class="flex items-center justify-center gap-2 mt-2.5">
+                        <span class="text-[8px] font-bold text-brand-highlight bg-brand-highlight/10 px-2 py-0.5 rounded border border-brand-highlight/20 uppercase tracking-wide">
+                          🚀 {{ getLevelTitle() }}
+                        </span>
+                        <span class="text-[8px] font-bold text-brand-accent bg-brand-accent/10 px-2 py-0.5 rounded border border-brand-accent/20 uppercase tracking-wide">
+                          PRO PLAN
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <!-- Requests Meter -->
-                <div class="flex items-center justify-between gap-3 bg-black/35 border border-white/5 rounded-2xl p-3 mt-3">
-                  <div class="flex-1 space-y-1.5">
-                    <div class="flex items-center justify-between text-[10px] font-bold">
-                      <span class="text-brand-textMuted flex items-center gap-1">⚡ AI Requests</span>
-                      <span class="text-brand-highlight">1,248 / 5,000</span>
-                    </div>
-                    <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div class="h-full bg-gradient-to-r from-brand-secondary to-brand-highlight rounded-full" style="width: 25%"></div>
+                  <!-- Navigation List -->
+                  <div class="py-3.5 space-y-1.5 border-b border-white/5">
+                    <button (click)="navTo('/profile')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 transition group text-left">
+                      <div class="flex items-center gap-3">
+                        <div class="w-7.5 h-7.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 text-sm">
+                          👤
+                        </div>
+                        <div>
+                          <span class="text-xs font-bold text-white block">Developer Profile</span>
+                          <span class="text-[9px] text-brand-textMuted/60 block">View Achievements & Stats</span>
+                        </div>
+                      </div>
+                      <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
+                    </button>
+
+                    <button (click)="navTo('/dashboard')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 transition group text-left">
+                      <div class="flex items-center gap-3">
+                        <div class="w-7.5 h-7.5 rounded-lg bg-[#4F46E5]/10 border border-[#4F46E5]/20 flex items-center justify-center text-brand-primary shrink-0 text-sm">
+                          🏠
+                        </div>
+                        <div>
+                          <span class="text-xs font-bold text-white block">Dashboard</span>
+                          <span class="text-[9px] text-brand-textMuted/60 block">Overview & Analytics</span>
+                        </div>
+                      </div>
+                      <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
+                    </button>
+
+                    <button (click)="navTo('/workspace')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 transition group text-left">
+                      <div class="flex items-center gap-3">
+                        <div class="w-7.5 h-7.5 rounded-lg bg-[#06B6D4]/10 border border-[#06B6D4]/20 flex items-center justify-center text-brand-accent shrink-0 text-sm">
+                          💻
+                        </div>
+                        <div>
+                          <span class="text-xs font-bold text-white block">Workspace Environment</span>
+                          <span class="text-[9px] text-brand-textMuted/60 block">Your AI Coding Workspace</span>
+                        </div>
+                      </div>
+                      <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
+                    </button>
+
+                    <button (click)="navTo('/project-review')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 transition group text-left">
+                      <div class="flex items-center gap-3">
+                        <div class="w-7.5 h-7.5 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-500 shrink-0 text-sm">
+                          🧠
+                        </div>
+                        <div>
+                          <span class="text-xs font-bold text-white block">AI Project Review</span>
+                          <span class="text-[9px] text-brand-textMuted/60 block">Smart Code Analysis</span>
+                        </div>
+                      </div>
+                      <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
+                    </button>
+
+                    <button (click)="navTo('/jobs')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 transition group text-left">
+                      <div class="flex items-center gap-3">
+                        <div class="w-7.5 h-7.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500 shrink-0 text-sm">
+                          💼
+                        </div>
+                        <div>
+                          <span class="text-xs font-bold text-white block">Background Jobs Console</span>
+                          <span class="text-[9px] text-brand-textMuted/60 block">Monitor & Manage Jobs</span>
+                        </div>
+                      </div>
+                      <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
+                    </button>
+
+                    <button (click)="navTo('/settings')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 transition group text-left">
+                      <div class="flex items-center gap-3">
+                        <div class="w-7.5 h-7.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0 text-sm">
+                          ⚙️
+                        </div>
+                        <div>
+                          <span class="text-xs font-bold text-white block">Settings Preferences</span>
+                          <span class="text-[9px] text-brand-textMuted/60 block">Customize Your Experience</span>
+                        </div>
+                      </div>
+                      <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
+                    </button>
+
+                    <a href="https://github.com" target="_blank" class="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 transition group text-left">
+                      <div class="flex items-center gap-3">
+                        <div class="w-7.5 h-7.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 text-sm">
+                          📄
+                        </div>
+                        <div>
+                          <span class="text-xs font-bold text-white block">Documentation</span>
+                          <span class="text-[9px] text-brand-textMuted/60 block">Guides & Help Center</span>
+                        </div>
+                      </div>
+                      <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
+                    </a>
+
+                    <a href="https://github.com" target="_blank" class="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 transition group text-left">
+                      <div class="flex items-center gap-3">
+                        <div class="w-7.5 h-7.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0 text-sm">
+                          💬
+                        </div>
+                        <div>
+                          <span class="text-xs font-bold text-white block">Share Feedback</span>
+                          <span class="text-[9px] text-brand-textMuted/60 block">Help us improve</span>
+                        </div>
+                      </div>
+                      <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
+                    </a>
+                  </div>
+
+                  <!-- Interactive App Appearance Themes Panel -->
+                  <div class="py-3.5 border-b border-white/5">
+                    <h4 class="text-[9px] font-extrabold text-brand-highlight/85 uppercase tracking-wider mb-2.5 text-center">
+                      Choose Theme Appearance
+                    </h4>
+                    <div class="grid grid-cols-3 gap-2">
+                      <button (click)="setAppTheme('theme-purple')" 
+                              [class]="appTheme() === 'theme-purple' ? 'border-brand-primary bg-brand-primary/10 text-white font-bold' : 'border-white/5 bg-white/5 text-brand-textMuted'"
+                              class="relative flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl border text-[10px] transition select-none cursor-pointer">
+                        <span>💜</span><span class="text-[9px]">Purple</span>
+                      </button>
+                      
+                      <button (click)="setAppTheme('theme-blue')" 
+                              [class]="appTheme() === 'theme-blue' ? 'border-brand-primary bg-brand-primary/10 text-white font-bold' : 'border-white/5 bg-white/5 text-brand-textMuted'"
+                              class="relative flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl border text-[10px] transition select-none cursor-pointer">
+                        <span>🌊</span><span class="text-[9px]">Ocean</span>
+                      </button>
+
+                      <button (click)="setAppTheme('theme-orange')" 
+                              [class]="appTheme() === 'theme-orange' ? 'border-brand-primary bg-brand-primary/10 text-white font-bold' : 'border-white/5 bg-white/5 text-brand-textMuted'"
+                              class="relative flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl border text-[10px] transition select-none cursor-pointer">
+                        <span>🌅</span><span class="text-[9px]">Sunset</span>
+                      </button>
+
+                      <button (click)="setAppTheme('theme-green')" 
+                              [class]="appTheme() === 'theme-green' ? 'border-brand-primary bg-brand-primary/10 text-white font-bold' : 'border-white/5 bg-white/5 text-brand-textMuted'"
+                              class="relative flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl border text-[10px] transition select-none cursor-pointer">
+                        <span>🌿</span><span class="text-[9px]">Emerald</span>
+                      </button>
+
+                      <button (click)="setAppTheme('theme-midnight')" 
+                              [class]="appTheme() === 'theme-midnight' ? 'border-brand-primary bg-brand-primary/10 text-white font-bold' : 'border-white/5 bg-white/5 text-brand-textMuted'"
+                              class="relative flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl border text-[10px] transition select-none cursor-pointer">
+                        <span>🌙</span><span class="text-[9px]">Midnight</span>
+                      </button>
+
+                      <button (click)="setAppTheme('theme-light')" 
+                              [class]="appTheme() === 'theme-light' ? 'border-brand-primary bg-brand-primary/10 text-white font-bold' : 'border-white/5 bg-white/5 text-brand-textMuted'"
+                              class="relative flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl border text-[10px] transition select-none cursor-pointer">
+                        <span>☀️</span><span class="text-[9px]">Light UI</span>
+                      </button>
                     </div>
                   </div>
-                  <!-- SVG circular chart ring -->
-                  <div class="relative w-10 h-10 flex items-center justify-center shrink-0">
-                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                      <path class="text-white/10" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                      <path class="text-brand-highlight" stroke-dasharray="25, 100" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    </svg>
-                    <span class="absolute text-[8px] font-black text-white">25%</span>
-                  </div>
-                </div>
 
-                <!-- Navigation List -->
-                <div class="py-2.5 space-y-1 border-b border-white/5">
-                  <button (click)="navTo('/profile')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition group text-left">
-                    <div class="flex items-center gap-3">
-                      <div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                        👤
-                      </div>
-                      <div>
-                        <span class="text-xs font-bold text-white block">Developer Profile</span>
-                        <span class="text-[9px] text-brand-textMuted/60 block">View Achievements & Stats</span>
-                      </div>
-                    </div>
-                    <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
-                  </button>
-
-                  <button (click)="navTo('/dashboard')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition group text-left">
-                    <div class="flex items-center gap-3">
-                      <div class="w-7 h-7 rounded-lg bg-[#4F46E5]/10 border border-[#4F46E5]/20 flex items-center justify-center text-brand-primary">
-                        🏠
-                      </div>
-                      <div>
-                        <span class="text-xs font-bold text-white block">Dashboard</span>
-                        <span class="text-[9px] text-brand-textMuted/60 block">Overview & Analytics</span>
-                      </div>
-                    </div>
-                    <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
-                  </button>
-
-                  <button (click)="navTo('/workspace')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition group text-left">
-                    <div class="flex items-center gap-3">
-                      <div class="w-7 h-7 rounded-lg bg-[#06B6D4]/10 border border-[#06B6D4]/20 flex items-center justify-center text-brand-accent">
-                        💻
-                      </div>
-                      <div>
-                        <span class="text-xs font-bold text-white block">Workspace Environment</span>
-                        <span class="text-[9px] text-brand-textMuted/60 block">Your AI Coding Workspace</span>
-                      </div>
-                    </div>
-                    <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
-                  </button>
-
-                  <button (click)="navTo('/jobs')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition group text-left">
-                    <div class="flex items-center gap-3">
-                      <div class="w-7 h-7 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500">
-                        💼
-                      </div>
-                      <div>
-                        <span class="text-xs font-bold text-white block">Background Jobs Console</span>
-                        <span class="text-[9px] text-brand-textMuted/60 block">Monitor & Manage Jobs</span>
-                      </div>
-                    </div>
-                    <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
-                  </button>
-
-                  <button (click)="navTo('/project-review')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition group text-left">
-                    <div class="flex items-center gap-3">
-                      <div class="w-7 h-7 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-500">
-                        🧠
-                      </div>
-                      <div>
-                        <span class="text-xs font-bold text-white block">AI Project Review</span>
-                        <span class="text-[9px] text-brand-textMuted/60 block">Smart Code Analysis</span>
-                      </div>
-                    </div>
-                    <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
-                  </button>
-
-                  <button (click)="navTo('/settings')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-white/5 transition group text-left">
-                    <div class="flex items-center gap-3">
-                      <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
-                        ⚙️
-                      </div>
-                      <div>
-                        <span class="text-xs font-bold text-white block">Settings Preferences</span>
-                        <span class="text-[9px] text-brand-textMuted/60 block">Customize Your Experience</span>
-                      </div>
-                    </div>
-                    <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
-                  </button>
-                </div>
-
-                <!-- Interactive App Appearance Themes Panel -->
-                <div class="py-3 border-b border-white/5">
-                  <h4 class="text-[9px] font-extrabold text-brand-highlight/85 uppercase tracking-wider mb-2.5">
-                    CHOOSE YOUR THEME
-                  </h4>
-                  <div class="grid grid-cols-2 gap-2">
-                    <button (click)="setAppTheme('theme-purple')" 
-                            [class]="appTheme() === 'theme-purple' ? 'border-brand-primary bg-brand-primary/10 text-white font-bold' : 'border-white/5 bg-white/5 text-brand-textMuted'"
-                            class="relative flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border text-[11px] transition select-none cursor-pointer">
-                      <span>💜</span><span>Purple</span>
-                      @if (appTheme() === 'theme-purple') {
-                        <span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-brand-primary rounded-full flex items-center justify-center text-[8px] text-white">✓</span>
-                      }
-                    </button>
-                    
-                    <button (click)="setAppTheme('theme-blue')" 
-                            [class]="appTheme() === 'theme-blue' ? 'border-brand-primary bg-brand-primary/10 text-white font-bold' : 'border-white/5 bg-white/5 text-brand-textMuted'"
-                            class="relative flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border text-[11px] transition select-none cursor-pointer">
-                      <span>🌊</span><span>Ocean</span>
-                      @if (appTheme() === 'theme-blue') {
-                        <span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-brand-primary rounded-full flex items-center justify-center text-[8px] text-white">✓</span>
-                      }
-                    </button>
-
-                    <button (click)="setAppTheme('theme-orange')" 
-                            [class]="appTheme() === 'theme-orange' ? 'border-brand-primary bg-brand-primary/10 text-white font-bold' : 'border-white/5 bg-white/5 text-brand-textMuted'"
-                            class="relative flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border text-[11px] transition select-none cursor-pointer">
-                      <span>🌅</span><span>Sunset</span>
-                      @if (appTheme() === 'theme-orange') {
-                        <span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-brand-primary rounded-full flex items-center justify-center text-[8px] text-white">✓</span>
-                      }
-                    </button>
-
-                    <button (click)="setAppTheme('theme-green')" 
-                            [class]="appTheme() === 'theme-green' ? 'border-brand-primary bg-brand-primary/10 text-white font-bold' : 'border-white/5 bg-white/5 text-brand-textMuted'"
-                            class="relative flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border text-[11px] transition select-none cursor-pointer">
-                      <span>🌿</span><span>Emerald</span>
-                      @if (appTheme() === 'theme-green') {
-                        <span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-brand-primary rounded-full flex items-center justify-center text-[8px] text-white">✓</span>
-                      }
-                    </button>
-
-                    <button (click)="setAppTheme('theme-midnight')" 
-                            [class]="appTheme() === 'theme-midnight' ? 'border-brand-primary bg-brand-primary/10 text-white font-bold' : 'border-white/5 bg-white/5 text-brand-textMuted'"
-                            class="relative flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border text-[11px] transition select-none cursor-pointer">
-                      <span>🌙</span><span>Midnight</span>
-                      @if (appTheme() === 'theme-midnight') {
-                        <span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-brand-primary rounded-full flex items-center justify-center text-[8px] text-white">✓</span>
-                      }
-                    </button>
-
-                    <button (click)="setAppTheme('theme-light')" 
-                            [class]="appTheme() === 'theme-light' ? 'border-brand-primary bg-brand-primary/10 text-white font-bold' : 'border-white/5 bg-white/5 text-brand-textMuted'"
-                            class="relative flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border text-[11px] transition select-none cursor-pointer">
-                      <span>☀️</span><span>Light UI</span>
-                      @if (appTheme() === 'theme-light') {
-                        <span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-brand-primary rounded-full flex items-center justify-center text-[8px] text-white">✓</span>
-                      }
+                  <!-- Sign Out -->
+                  <div class="pt-4">
+                    <button (click)="logout()" class="w-full flex items-center justify-center gap-2.5 px-3 py-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 transition text-xs font-bold">
+                      <span>🚪</span> Sign Out
                     </button>
                   </div>
-                </div>
 
-                <!-- Documentation and Support links -->
-                <div class="py-2 space-y-1.5 border-b border-white/5">
-                  <a href="https://github.com" target="_blank" class="w-full flex items-center justify-between px-2.5 py-1 rounded-lg hover:bg-white/5 transition text-left group">
-                    <div class="flex items-center gap-3">
-                      <span class="text-sm">📄</span>
-                      <div>
-                        <span class="text-xs font-bold text-white block">Documentation</span>
-                        <span class="text-[9px] text-brand-textMuted/60 block">Guides & Help Center</span>
-                      </div>
-                    </div>
-                    <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
-                  </a>
-
-                  <a href="https://github.com" target="_blank" class="w-full flex items-center justify-between px-2.5 py-1 rounded-lg hover:bg-white/5 transition text-left group">
-                    <div class="flex items-center gap-3">
-                      <span class="text-sm">💬</span>
-                      <div>
-                        <span class="text-xs font-bold text-white block">Share Feedback</span>
-                        <span class="text-[9px] text-brand-textMuted/60 block">Help us improve</span>
-                      </div>
-                    </div>
-                    <span class="text-brand-textMuted/40 group-hover:text-white transition">&rarr;</span>
-                  </a>
-                </div>
-
-                <!-- Sign Out -->
-                <div class="pt-2">
-                  <button (click)="logout()" class="w-full flex items-center justify-between px-2.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 transition text-left">
-                    <div class="flex items-center gap-3">
-                      <span class="text-xs">🚪</span>
-                      <div>
-                        <span class="text-xs font-bold block">Sign Out</span>
-                        <span class="text-[9px] opacity-60 block">Logout from DevMind AI</span>
-                      </div>
-                    </div>
-                    <span>&rarr;</span>
-                  </button>
                 </div>
               </div>
             }
@@ -364,6 +329,18 @@ export class NavbarComponent implements OnInit {
   private toastr = inject(ToastrService);
   private router = inject(Router);
 
+  constructor() {
+    effect(() => {
+      if (typeof document !== 'undefined') {
+        if (this.showProfileMenu() || this.showShortcutModal()) {
+          document.body.style.overflow = 'hidden';
+        } else {
+          document.body.style.overflow = '';
+        }
+      }
+    });
+  }
+
   user = this.authService.currentUserSignal;
   avatarError = signal<boolean>(false);
 
@@ -382,6 +359,12 @@ export class NavbarComponent implements OnInit {
 
   @HostListener('window:keydown', ['$event'])
   onGlobalKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.showProfileMenu.set(false);
+      this.showShortcutModal.set(false);
+      return;
+    }
+
     const active = document.activeElement;
     const isTyping = active && (
       active.tagName === 'INPUT' || 
@@ -398,6 +381,15 @@ export class NavbarComponent implements OnInit {
     } else if (event.key === '/') {
       event.preventDefault();
       this.commandService.open();
+    }
+  }
+
+  onLogoClick(event: MouseEvent): void {
+    event.preventDefault();
+    if (this.router.url === '/') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      this.router.navigate(['/']);
     }
   }
 

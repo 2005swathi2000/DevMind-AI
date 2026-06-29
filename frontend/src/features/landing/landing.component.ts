@@ -1,6 +1,6 @@
-import { Component, OnInit, signal, HostListener, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { Component, OnInit, signal, HostListener, ViewChild, ElementRef, AfterViewChecked, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { getApiBaseUrl } from '../../core/services/api-config';
 
@@ -62,8 +62,8 @@ interface SupportMessage {
       <header class="w-full border-b border-white/5 bg-[#09090B]/55 backdrop-blur-xl sticky top-0 z-50 transition duration-300">
         <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <!-- Logo -->
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#4F46E5] to-[#7C3AED] flex items-center justify-center font-bold text-white text-lg shadow-md transition duration-300 hover:rotate-6">
+          <div (click)="onLogoClick($event)" class="flex items-center gap-3 cursor-pointer group">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#4F46E5] to-[#7C3AED] flex items-center justify-center font-bold text-white text-lg shadow-md transition duration-300 group-hover:rotate-6">
               D
             </div>
             <span class="font-bold text-white tracking-wide text-lg font-title flex items-center gap-1.5">
@@ -271,15 +271,6 @@ interface SupportMessage {
           </div>
 
           <!-- Floating Widgets -->
-          <div class="absolute -top-6 -left-4 glass-card p-4 flex items-center gap-3 animate-bounce" style="animation-duration: 4s;">
-            <div class="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg">
-              📊
-            </div>
-            <div class="text-left">
-              <span class="text-[10px] block text-slate-400 font-bold uppercase tracking-wider">Total Reviews</span>
-              <span class="text-xs font-extrabold text-white">+1,280 Daily</span>
-            </div>
-          </div>
 
           <div class="absolute top-[40%] -right-8 glass-card p-4 flex items-center gap-3 animate-bounce" style="animation-duration: 5s;">
             <div class="w-9 h-9 rounded-lg bg-indigo-500/20 flex items-center justify-center text-[#06B6D4] text-lg">
@@ -560,11 +551,11 @@ interface SupportMessage {
                   </div>
                 </div>
               }
-              @if (isSupportTyping()) {
+              @if (isBotThinking()) {
                 <div class="mr-auto max-w-[85%] flex flex-col items-start gap-1">
                   <span class="text-[8px] font-bold text-slate-500">DevMind Bot</span>
                   <div class="px-3 py-2 bg-white/5 border border-white/5 rounded-xl rounded-tl-none flex items-center gap-1">
-                    <span class="w-1 h-1 rounded-full bg-cyan-400 animate-ping"></span>
+                    <span class="w-1 h-1 rounded-full bg-[#FF70BF] animate-ping"></span>
                     <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Bot is thinking...</span>
                   </div>
                 </div>
@@ -573,11 +564,11 @@ interface SupportMessage {
 
             <!-- Input Bar -->
             <div class="p-3 border-t border-white/5 bg-black/25 flex items-center gap-2">
-              <input type="text" [(ngModel)]="chatInput" (keydown.enter)="submitChat()" placeholder="Ask DevMind AI..."
-                     [disabled]="isSupportTyping()"
-                     class="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-white/35 focus:outline-none focus:border-cyan-400">
+              <textarea [(ngModel)]="chatInput" (keydown)="onChatKeydown($event)" placeholder="Ask DevMind AI..."
+                     [disabled]="isSupportTyping()" rows="1"
+                     class="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-white/35 focus:outline-none focus:border-cyan-400 resize-none overflow-y-auto max-h-24 h-9 leading-normal"></textarea>
               <button (click)="submitChat()" [disabled]="isSupportTyping() || !chatInput.trim()"
-                      class="px-3 py-2 bg-gradient-to-r from-[#FF70BF] to-[#7C3AED] rounded-xl text-xs font-bold text-white shadow disabled:opacity-40">
+                      class="px-3 py-2 bg-gradient-to-r from-[#FF70BF] to-[#7C3AED] rounded-xl text-xs font-bold text-white shadow disabled:opacity-40 shrink-0">
                 Send
               </button>
             </div>
@@ -629,6 +620,7 @@ interface SupportMessage {
   `]
 })
 export class LandingComponent implements OnInit, AfterViewChecked {
+  private router = inject(Router);
   @ViewChild('supportScrollContainer') private supportScrollContainer!: ElementRef;
 
   demoGenerating = signal<boolean>(false);
@@ -641,6 +633,7 @@ export class LandingComponent implements OnInit, AfterViewChecked {
   // Floating Support chatbot states
   showSupportChat = signal<boolean>(false);
   isSupportTyping = signal<boolean>(false);
+  isBotThinking = signal<boolean>(false);
   chatInput = '';
   supportMessages = signal<SupportMessage[]>([
     { sender: 'bot', text: 'Hello! I am your DevMind AI assistant bot. Ask me anything about our platform reviews or workspace configs!' }
@@ -735,6 +728,24 @@ export class LandingComponent implements OnInit, AfterViewChecked {
     }
   ];
 
+  onChatKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      if (!event.shiftKey) {
+        event.preventDefault();
+        this.submitChat();
+      }
+    }
+  }
+
+  onLogoClick(event: MouseEvent): void {
+    event.preventDefault();
+    if (this.router.url === '/') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      this.router.navigate(['/']);
+    }
+  }
+
   ngOnInit() {
     this.animateCounters();
   }
@@ -768,6 +779,7 @@ export class LandingComponent implements OnInit, AfterViewChecked {
     // Append user message
     this.supportMessages.update(msgs => [...msgs, { sender: 'user', text }]);
     this.isSupportTyping.set(true);
+    this.isBotThinking.set(true);
 
     // Format historical messages for prompt context
     const historyPayload = this.supportMessages().slice(1, -1).map(m => ({
@@ -820,9 +832,10 @@ export class LandingComponent implements OnInit, AfterViewChecked {
     if (!response || !response.ok) {
       console.error('All chatbot connection attempts failed.', lastError);
       this.isSupportTyping.set(false);
+      this.isBotThinking.set(false);
       this.supportMessages.update(msgs => [
         ...msgs, 
-        { sender: 'bot', text: 'I am experiencing connection issues. Please check your network and try again.' }
+        { sender: 'bot', text: 'Sorry, the AI service is temporarily unavailable. Please try again later.' }
       ]);
       return;
     }
@@ -833,7 +846,7 @@ export class LandingComponent implements OnInit, AfterViewChecked {
         throw new Error('ReadableStream not supported by response body');
       }
 
-      this.isSupportTyping.set(false);
+      this.isBotThinking.set(false);
       // Append an empty bot message bubble to stream into
       this.supportMessages.update(msgs => [...msgs, { sender: 'bot', text: '' }]);
 
@@ -872,8 +885,17 @@ export class LandingComponent implements OnInit, AfterViewChecked {
       }
     } catch (e: any) {
       console.error(e);
+      this.supportMessages.update(msgs => {
+        const updated = [...msgs];
+        const last = updated[updated.length - 1];
+        if (last && last.sender === 'bot' && last.text === '') {
+          last.text = 'Sorry, the AI service is temporarily unavailable. Please try again later.';
+        }
+        return updated;
+      });
+    } finally {
       this.isSupportTyping.set(false);
-      this.supportMessages.update(msgs => [...msgs, { sender: 'bot', text: 'Connection interrupted. Please try again.' }]);
+      this.isBotThinking.set(false);
     }
   }
 

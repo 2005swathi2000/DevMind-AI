@@ -99,20 +99,53 @@ export class WorkspaceService {
         buffer = lines.pop() || '';
 
         for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed.startsWith('data:')) {
-            const dataContent = trimmed.substring(5).trim();
+          let cleanLine = line;
+          if (cleanLine.endsWith('\r')) {
+            cleanLine = cleanLine.slice(0, -1);
+          }
+          if (cleanLine.startsWith('data:')) {
+            let dataContent = cleanLine.substring(5);
+            if (dataContent.startsWith(' ')) {
+              dataContent = dataContent.substring(1);
+            }
             if (dataContent) {
-              onChunk(dataContent);
+              try {
+                const binaryString = atob(dataContent);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  bytes[i] = binaryString.charCodeAt(i);
+                }
+                const decodedText = new TextDecoder().decode(bytes);
+                onChunk(decodedText);
+              } catch (err) {
+                onChunk(dataContent);
+              }
             }
           }
         }
       }
 
-      if (buffer.trim().startsWith('data:')) {
-        const dataContent = buffer.trim().substring(5).trim();
+      let cleanBuffer = buffer;
+      if (cleanBuffer.endsWith('\r')) {
+        cleanBuffer = cleanBuffer.slice(0, -1);
+      }
+      if (cleanBuffer.startsWith('data:')) {
+        let dataContent = cleanBuffer.substring(5);
+        if (dataContent.startsWith(' ')) {
+          dataContent = dataContent.substring(1);
+        }
         if (dataContent) {
-          onChunk(dataContent);
+          try {
+            const binaryString = atob(dataContent);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            const decodedText = new TextDecoder().decode(bytes);
+            onChunk(decodedText);
+          } catch (err) {
+            onChunk(dataContent);
+          }
         }
       }
 
